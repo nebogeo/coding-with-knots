@@ -2,4 +2,4 @@
 
 Khipu parsing code for reading the Khipu Database Project files.
 
-[[UR113 Valhalla_jpg.jpg]]
+![](https://github.com/nebogeo/khipu-parser/raw/master/UR113 Valhalla_jpg.jpg)
