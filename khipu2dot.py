@@ -26,8 +26,40 @@ def get_parent_pendant(s):
         return s[0:s.rfind("s")]
     else: return ""
 
+class knot:
+    def __init__(self,value,type,position,spin):
+        self.value = value
+        self.type = type
+        self.position = position
+        self.spin = spin
+
+    def render(self):
+        r = ""
+        if self.type == "S":
+            for i in range(0,self.value):
+                if i==0:
+                    r+="O"
+                else:
+                    r+="-O"
+        elif self.type == "L":
+            for i in range(0,self.value):
+                r+="C"
+        elif self.type == "E":
+            r+="8"
+        return r
+
 def parse_knot(s):
-    return s[0:s.find("(")]
+    value = 1
+    position = 0
+    try:
+        value = int(s[0:1])
+        position = float(s[s.find("(")+1:s.find("/")])
+    except Exception:
+        print("error parsing knot: "+s)
+    return knot(value,
+                s[1:s.find("(")],
+                position,
+                s[s.find("/")+1:s.find(")")])
 
 def parse_knots(s):
     if s == "": return []
@@ -55,21 +87,26 @@ colour_lookup = {
     "0B" : "#64400F",
     "RM" : "#AB343A",
     "PR" : "#490005",
-    "FR" : "#7F180D"
+    "FR" : "#7F180D",
+    "DB" : "#4D220E",
+    "YB" : "#BB8B54",
+    "MG" : "#817066",
+    "GA" : "#503D33"
 }
 
 def parse_colour(s):
-    if s.find(":")!=-1:
-        s = s[0:s.find(":")]
-    if s.find("-")!=-1:
-        s = s[0:s.find("-")]
-    if s.find("/")!=-1:
-        s = s[0:s.find("/")]
+    if ":" in s: s = s[0:s.find(":")]
+    if "-" in s: s = s[0:s.find("-")]
+    if "/" in s: s = s[0:s.find("/")]
+
+    if "(" in s: s = s[0:s.find("(")]
+    s = s.strip(" ")
 
     if s in colour_lookup:
         return '"'+colour_lookup[s]+'"'
     else:
-        if s!="": print s
+        if s!="":
+            print("don't know this colour: ["+s+"]")
         return "yellow"
 
 
@@ -81,7 +118,10 @@ def unit_test():
     assert(get_parent_pendant("X1s1")=="X1")
     assert(get_parent_pendant("X1s6s1")=="X1s6")
     assert(len(parse_knots("1S(5.0/Z) 2S(14.0/Z) 1E(25.0/Z)"))==3)
-    assert(parse_knots("1S(5.0/Z) 2S(14.0/Z) 1E(25.0/Z)")[0]=="1S")
+    ks = parse_knots("1S(5.0/Z) 2S(14.0/Z) 1E(25.0/Z)")
+    assert(ks[0].type=="S")
+    assert(ks[0].position==5.0)
+    assert(ks[0].spin=="Z")
     assert(len(parse_knots(""))==0)
     assert(parse_colour("foo")=="yellow")
     assert(parse_colour("MB")=='"#673923"')
@@ -106,20 +146,22 @@ def parse_to_dot(quipu):
         else:
             out+='"'+get_parent_pendant(pid)+'" -> "'+pid+'"\n'
 
-        out+='"'+pid+'" [style=filled, fillcolor='+colour+']\n'
+        out+='"'+pid+'" [label="", style=filled, fillcolor='+colour+']\n'
 
         # stick the knots on the end
         p = pid
-        for knot in knots:
-            out+='"'+p+'" -> "'+pid+':'+knot+'"\n'
-            p = pid+':'+knot
-            out+='"'+p+'" [label="'+knot+'"style=filled, fillcolor='+colour+']\n'
+        pos = 0
+        for i,knot in enumerate(knots):
+            kid = pid+':'+str(i)
+            out+='"'+p+'" -> "'+kid+'"\n'
+            pos+=knot.position
+            out+='"'+kid+'" [label="'+knot.render()+'"style=filled, fillcolor='+colour+']\n'
 
     out+="}\n"
     return out
 
 # open the spreadsheet
-workbook = xlrd.open_workbook('UR001.xls')
+workbook = xlrd.open_workbook('UR035.xls')
 print workbook.sheet_names()
 quipu = workbook.sheet_by_name('Pendant Detail')
 
