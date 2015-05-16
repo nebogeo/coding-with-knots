@@ -33,6 +33,46 @@ def parse_knots(s):
     if s == "": return []
     return map(parse_knot,s.split(" "))
 
+# colours
+
+# multicolour codes
+# B-G twisted together (barber pole)
+# B:G interspersed (mottled)
+# B/G colour change with distance
+
+colour_lookup = {
+    "W": "#FFFFFF",
+    "SR":  "#BF2233",
+    "MB" : "#673923",
+    "GG" : "#575E4E",
+    "KB" : "#35170C",
+    "AB" : "#A86540",
+    "HB" : "#5A3D30",
+    "RL" : "#AA6651",
+    "BG" : "#4A545C",
+    "PG" : "#8D917A",
+    "B" : "#7D512D",
+    "0B" : "#64400F",
+    "RM" : "#AB343A",
+    "PR" : "#490005",
+    "FR" : "#7F180D"
+}
+
+def parse_colour(s):
+    if s.find(":")!=-1:
+        s = s[0:s.find(":")]
+    if s.find("-")!=-1:
+        s = s[0:s.find("-")]
+    if s.find("/")!=-1:
+        s = s[0:s.find("/")]
+
+    if s in colour_lookup:
+        return '"'+colour_lookup[s]+'"'
+    else:
+        if s!="": print s
+        return "yellow"
+
+
 # unit tests for the parsing functions
 
 def unit_test():
@@ -43,19 +83,22 @@ def unit_test():
     assert(len(parse_knots("1S(5.0/Z) 2S(14.0/Z) 1E(25.0/Z)"))==3)
     assert(parse_knots("1S(5.0/Z) 2S(14.0/Z) 1E(25.0/Z)")[0]=="1S")
     assert(len(parse_knots(""))==0)
+    assert(parse_colour("foo")=="yellow")
+    assert(parse_colour("MB")=='"#673923"')
 
 # run em...
 unit_test()
 
 # convert a database spreadsheet into a dot file for visualisation
-def parse_to_dot(worksheet):
+def parse_to_dot(quipu):
     out = "digraph {\n graph [rankdir=LR]\n"
-    for curr_row in range(6,worksheet.nrows):
-        row = worksheet.row(curr_row)
-        pid = worksheet.cell_value(curr_row, 0)
-        knots = worksheet.cell_value(curr_row, 3)
+    for curr_row in range(6,quipu.nrows):
+        row = quipu.row(curr_row)
+        pid = quipu.cell_value(curr_row, 0)
+        knots = parse_knots(quipu.cell_value(curr_row, 3))
+        colour = parse_colour(quipu.cell_value(curr_row, 7))
 
-        if worksheet.cell_type(curr_row, 0)==2: # a number
+        if quipu.cell_type(curr_row, 0)==2: # a number
             pid = str(int(pid))
 
         if not has_parent(pid):
@@ -63,12 +106,14 @@ def parse_to_dot(worksheet):
         else:
             out+='"'+get_parent_pendant(pid)+'" -> "'+pid+'"\n'
 
+        out+='"'+pid+'" [style=filled, fillcolor='+colour+']\n'
+
         # stick the knots on the end
         p = pid
-        for knot in parse_knots(knots):
+        for knot in knots:
             out+='"'+p+'" -> "'+pid+':'+knot+'"\n'
             p = pid+':'+knot
-            out+='"'+p+'" [label="'+knot+'"style=filled, fillcolor=yellow]\n'
+            out+='"'+p+'" [label="'+knot+'"style=filled, fillcolor='+colour+']\n'
 
     out+="}\n"
     return out
@@ -76,7 +121,7 @@ def parse_to_dot(worksheet):
 # open the spreadsheet
 workbook = xlrd.open_workbook('UR001.xls')
 print workbook.sheet_names()
-worksheet = workbook.sheet_by_name('Pendant Detail')
+quipu = workbook.sheet_by_name('Pendant Detail')
 
 with open('khipu.dot', 'w') as f:
-    f.write(parse_to_dot(worksheet))
+    f.write(parse_to_dot(quipu))
