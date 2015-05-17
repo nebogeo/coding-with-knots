@@ -10,3 +10,10 @@ This project is an side thread of the [weavingcodes](http://kairotic.org) projec
 * [python](https://www.python.org/)
 * [python-xlrd](https://pypi.python.org/pypi/xlrd) for reading excel spreadsheets
 * [graphviz](http://www.graphviz.org/) for rendering graphs
+
+##Usage
+
+Command line:
+
+    $ python khipu2dot.py
+    $ dot khipu.dot -tPNG > khipu.png
