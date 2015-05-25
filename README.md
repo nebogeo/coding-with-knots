@@ -1,6 +1,6 @@
 #Coding with knots
 
-Khipu parsing code for reading the [Khipu Database Project](http://khipukamayuq.fas.harvard.edu/) files.
+Quipu parsing code for reading the [Khipu Database Project](http://khipukamayuq.fas.harvard.edu/) files.
 This project is an side thread of the [weavingcodes](http://kairotic.org) project.
 
 ![](https://github.com/nebogeo/khipu-parser/raw/master/UR113 Valhalla_jpg.jpg)
@@ -15,5 +15,5 @@ This project is an side thread of the [weavingcodes](http://kairotic.org) projec
 
 Command line:
 
-    $ python khipu2dot.py
-    $ dot khipu.dot -tPNG > khipu.png
+    $ python quipu2dot.py
+    $ dot quipu.dot -tPNG > quipu.png

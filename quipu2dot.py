@@ -1,4 +1,4 @@
-# A Khipu database parser
+# A Quipu database parser
 # Copyright (C) 2015 Dave Griffiths
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ def get_parent_pendant(s):
         return s[0:s.rfind("s")]
     else: return ""
 
+# a knot is complicated enough to make a class for
 class knot:
     def __init__(self,value,type,position,spin):
         self.value = value
@@ -33,21 +34,28 @@ class knot:
         self.position = position
         self.spin = spin
 
+    # render the knot to ascii format!
     def render(self):
-        r = ""
+        direction = "?"
+        # + 90 degrees
+        if self.spin=="S": direction = "/"
+        if self.spin=="Z": direction = "\\\\"
+
+        r=""
         if self.type == "S":
             for i in range(0,self.value):
                 if i==0:
                     r+="O"
                 else:
-                    r+="-O"
+                    r+=direction+"O"
         elif self.type == "L":
             for i in range(0,self.value):
-                r+="C"
+                r+=direction
         elif self.type == "E":
-            r+="8"
+            r+=direction+"8"
         return r
 
+# build a knot from it's text representation
 def parse_knot(s):
     value = 1
     position = 0
@@ -61,19 +69,19 @@ def parse_knot(s):
                 position,
                 s[s.find("/")+1:s.find(")")])
 
+# render a list of knots
 def parse_knots(s):
     if s == "": return []
     return map(parse_knot,s.split(" "))
-
-# colours
 
 # multicolour codes
 # B-G twisted together (barber pole)
 # B:G interspersed (mottled)
 # B/G colour change with distance
 
+# partially from here: http://tx4.us/nbs-iscc.htm
 colour_lookup = {
-    "W": "#FFFFFF",
+    "W": "#777777",
     "SR":  "#BF2233",
     "MB" : "#673923",
     "GG" : "#575E4E",
@@ -94,11 +102,7 @@ colour_lookup = {
     "GA" : "#503D33"
 }
 
-def parse_colour(s):
-    if ":" in s: s = s[0:s.find(":")]
-    if "-" in s: s = s[0:s.find("-")]
-    if "/" in s: s = s[0:s.find("/")]
-
+def parse_one_colour(s):
     if "(" in s: s = s[0:s.find("(")]
     s = s.strip(" ")
 
@@ -109,9 +113,15 @@ def parse_colour(s):
             print("don't know this colour: ["+s+"]")
         return "yellow"
 
+# we don't differenciate between colour effects yet :(
+def parse_colour(s):
+    #print s
+    if ":" in s: return map(parse_one_colour,s.split(":"))
+    elif "-" in s: return map(parse_one_colour,s.split("-"))
+    elif "/" in s: return map(parse_one_colour,s.split("/"))
+    else: return [parse_one_colour(s)]
 
 # unit tests for the parsing functions
-
 def unit_test():
     assert(has_parent("X1")==False)
     assert(has_parent("X1s1")==True)
@@ -123,47 +133,61 @@ def unit_test():
     assert(ks[0].position==5.0)
     assert(ks[0].spin=="Z")
     assert(len(parse_knots(""))==0)
-    assert(parse_colour("foo")=="yellow")
-    assert(parse_colour("MB")=='"#673923"')
+    assert(parse_colour("foo")==["yellow"])
+    assert(parse_colour("MB")==['"#673923"'])
+    assert(parse_colour("MB:MG")==['"#673923"','"#817066"'])
 
 # run em...
 unit_test()
 
 # convert a database spreadsheet into a dot file for visualisation
 def parse_to_dot(quipu):
-    out = "digraph {\n graph [rankdir=LR]\n"
+    out = "graph {\n graph [rankdir=LR]\n"
+    # skip the gumpf at the top, start on the 6th line
     for curr_row in range(6,quipu.nrows):
-        row = quipu.row(curr_row)
+        # get the stuff from the row
         pid = quipu.cell_value(curr_row, 0)
-        knots = parse_knots(quipu.cell_value(curr_row, 3))
-        colour = parse_colour(quipu.cell_value(curr_row, 7))
-
-        if quipu.cell_type(curr_row, 0)==2: # a number
+        if quipu.cell_type(curr_row, 0)==2: # convert a number to text
             pid = str(int(pid))
+        ply = quipu.cell_value(curr_row, 1)
+        attach = quipu.cell_value(curr_row, 2)
+        knots = parse_knots(quipu.cell_value(curr_row, 3))
+        colours = parse_colour(quipu.cell_value(curr_row, 7))
 
+        # generate graphviz colour list
+        clist = ""
+        for i,c in enumerate(colours):
+            if i==0:
+                clist+=c
+            else:
+                clist+=":"+c
+
+        # no parent, attach to the primary node
         if not has_parent(pid):
-            out+='"primary" -> "'+pid+'"\n'
+            out+='"primary" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
         else:
-            out+='"'+get_parent_pendant(pid)+'" -> "'+pid+'"\n'
+            # otherwise attach to parent
+            out+='"'+get_parent_pendant(pid)+'" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
 
-        out+='"'+pid+'" [label="", style=filled, fillcolor='+colour+']\n'
+        # describe the node details
+        out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+']\n'
 
-        # stick the knots on the end
+        # stick the knots on the end of the pendant node
         p = pid
         pos = 0
         for i,knot in enumerate(knots):
             kid = pid+':'+str(i)
-            out+='"'+p+'" -> "'+kid+'"\n'
+            out+='"'+p+'" -- "'+kid+'" [penwidth=5,color='+colours[0]+']\n'
             pos+=knot.position
-            out+='"'+kid+'" [label="'+knot.render()+'"style=filled, fillcolor='+colour+']\n'
+            out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
 
     out+="}\n"
     return out
 
 # open the spreadsheet
-workbook = xlrd.open_workbook('UR035.xls')
+workbook = xlrd.open_workbook('UR001.xls')
 print workbook.sheet_names()
 quipu = workbook.sheet_by_name('Pendant Detail')
 
-with open('khipu.dot', 'w') as f:
+with open('quipu.dot', 'w') as f:
     f.write(parse_to_dot(quipu))
