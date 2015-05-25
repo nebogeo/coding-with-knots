@@ -1,7 +1,7 @@
 #Coding with knots
 
 Quipu parsing code for reading the [Khipu Database Project](http://khipukamayuq.fas.harvard.edu/) files.
-This project is an side thread of the [weavingcodes](http://kairotic.org) project.
+This project is a side thread of the [weavingcodes](http://kairotic.org) project.
 
 ![](https://github.com/nebogeo/khipu-parser/raw/master/UR113 Valhalla_jpg.jpg)
 
