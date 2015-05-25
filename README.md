@@ -15,5 +15,5 @@ This project is an side thread of the [weavingcodes](http://kairotic.org) projec
 
 Command line:
 
-    $ python quipu2dot.py
-    $ dot quipu.dot -tPNG > quipu.png
+    $ ./quipu2dot.py UR001.xls
+    $ dot UR001.xls.dot -tPNG > UR001.png
