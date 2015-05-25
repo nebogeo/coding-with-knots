@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # A Quipu database parser
 # Copyright (C) 2015 Dave Griffiths
 #
@@ -14,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import xlrd
 
 # functions for parsing the string data
@@ -49,8 +51,10 @@ class knot:
                 else:
                     r+=direction+"O"
         elif self.type == "L":
+            r+="("
             for i in range(0,self.value):
                 r+=direction
+            r+=")"
         elif self.type == "E":
             r+=direction+"8"
         return r
@@ -180,14 +184,15 @@ def parse_to_dot(quipu):
             out+='"'+p+'" -- "'+kid+'" [penwidth=5,color='+colours[0]+']\n'
             pos+=knot.position
             out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
+            p = kid
 
     out+="}\n"
     return out
 
+
 # open the spreadsheet
-workbook = xlrd.open_workbook('UR001.xls')
-print workbook.sheet_names()
+workbook = xlrd.open_workbook(sys.argv[1])
 quipu = workbook.sheet_by_name('Pendant Detail')
 
-with open('quipu.dot', 'w') as f:
+with open(sys.argv[1]+'.dot', 'w') as f:
     f.write(parse_to_dot(quipu))
