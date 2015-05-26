@@ -201,14 +201,12 @@ def parse_to_dot(quipu):
     return out
 
 def getLum(hex_color):
-#    print hex_color
-#    print "/////////// it should get white"
     if hex_color != "yellow":
         rgb_int = int("0x" + str(hex_color)[2:-1], 0)
         blue = rgb_int & 255
         green = (rgb_int >> 8) & 255
         red = (rgb_int >> 16) & 255
-        lum = math.sqrt((0.299 * (red ** 2)) + (0.587 * (green **2)) + ( 0.144 * (blue**2)))
+        lum = math.sqrt((0.299 * (red ** 2)) + (0.587 * (green ** 2)) + ( 0.144 * (blue ** 2)))
         return int(lum)
     else: 
         return hex_color
