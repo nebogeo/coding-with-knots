@@ -175,8 +175,9 @@ def parse_to_dot(quipu):
             out+='"'+get_parent_pendant(pid)+'" -- "'+pid+'" [penwidth=1,color='+colours[0]+']\n'
 
         # describe the node details
-        if(getLum(colours[0]) <= 100 and colours[0] != "yellow"): 
-            out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+'fontcolor="#FFFFFF"'+']\n'
+        # customize threshold. bright white should be 255  
+        if(getLum(colours[0]) <= 100 and colours[0] != "yellow"):
+            out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+', fontcolor="#FFFFFF"'+']\n'
         else:
             out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+']\n'
 
@@ -190,7 +191,7 @@ def parse_to_dot(quipu):
             # print getLum(colours[0])
             if(colours[0] != "yellow" and getLum(colours[0]) <= 100):
                # print "++++++++ it's getting white"
-                out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+'fontcolor="#FFFFFF"'+']\n'
+                out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+', fontcolor="#FFFFFF"'+']\n'
             else:
                # print "-------- it's the same as it is"
                 out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
