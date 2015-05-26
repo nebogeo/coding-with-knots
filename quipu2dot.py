@@ -17,6 +17,7 @@
 
 import sys
 import xlrd
+import math
 
 # functions for parsing the string data
 
@@ -168,27 +169,48 @@ def parse_to_dot(quipu):
 
         # no parent, attach to the primary node
         if not has_parent(pid):
-            out+='"primary" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
+            out+='"primary" -- "'+pid+'" [penwidth=1,color='+colours[0]+']\n'
         else:
             # otherwise attach to parent
-            out+='"'+get_parent_pendant(pid)+'" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
+            out+='"'+get_parent_pendant(pid)+'" -- "'+pid+'" [penwidth=1,color='+colours[0]+']\n'
 
         # describe the node details
-        out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+']\n'
+        if(getLum(colours[0]) <= 100 and colours[0] != "yellow"): 
+            out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+'fontcolor="#FFFFFF"'+']\n'
+        else:
+            out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+']\n'
 
         # stick the knots on the end of the pendant node
         p = pid
         pos = 0
         for i,knot in enumerate(knots):
             kid = pid+':'+str(i)
-            out+='"'+p+'" -- "'+kid+'" [penwidth=5,color='+colours[0]+']\n'
+            out+='"'+p+'" -- "'+kid+'" [penwidth=1,color='+colours[0]+']\n'
             pos+=knot.position
-            out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
+            # print getLum(colours[0])
+            if(colours[0] != "yellow" and getLum(colours[0]) <= 100):
+               # print "++++++++ it's getting white"
+                out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+'fontcolor="#FFFFFF"'+']\n'
+            else:
+               # print "-------- it's the same as it is"
+                out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
             p = kid
 
     out+="}\n"
     return out
 
+def getLum(hex_color):
+#    print hex_color
+#    print "/////////// it should get white"
+    if hex_color != "yellow":
+        rgb_int = int("0x" + str(hex_color)[2:-1], 0)
+        blue = rgb_int & 255
+        green = (rgb_int >> 8) & 255
+        red = (rgb_int >> 16) & 255
+        lum = math.sqrt((0.299 * (red ** 2)) + (0.587 * (green **2)) + ( 0.144 * (blue**2)))
+        return int(lum)
+    else: 
+        return hex_color
 
 # open the spreadsheet
 workbook = xlrd.open_workbook(sys.argv[1])
