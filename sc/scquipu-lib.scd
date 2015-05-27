@@ -20,27 +20,60 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
 	~body = lines.select { |x| x.beginsWith("\"") };
 
-	~allNodes = ~body.collect { |x| ~parse.(x) };
+	~everything = ~body.collect { |x| ~parse.(x) };
+
+	~allLinks = ~everything.select { |x| x[\type] == \qlink };
+	~allNodes = ~everything.select { |x| x[\type] == \qnode };
+	~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
+	~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
+
 	~nodeDict = ();
-	~allNodes.do { |x| if(x[\type] == \qnode) { ~nodeDict[x[\value]] = x } };
-	~allLinks = ~allNodes.select { |x| x[\type] == \qlink };
+	~allNodes.do { |x| ~nodeDict[x[\value]] = x };
 
 	~findDangling = {
-		~allNodes.select { |x| x[\type] == \qlink }.select { |x|
+		~everything.select { |x| x[\type] == \qlink }.select { |x|
 			~nodeDict[x[\value].key].isNil
 		}.collect { |x| x[\value].key }.as(Set)
 	};
 
 	"--- missing nodes: -----".postln;
 	~findDangling.value.postln;
+
+
 };
 
-~convert = { |x| // from wslib
-	var couldBeNumber = x.every({ |item, i|
+~convert = { |x|
+	var couldBeNumber, isColor;
+	 // in case we later want to encode data with spaces, need to change this.
+	x = x.replace(" ", "");
+	x = x.replace("\"", "");
+	couldBeNumber = x.every({ |item, i|  // from wslib
 		((item.isDecDigit) or: (item == $.))
 		or: ((item == $-) && (i == 0))
 	}) and: { this != "-" };
-	if(couldBeNumber) { x.interpret } { x.replace("\"", "").replace(" ", "").asSymbol }
+	// in this case color is the only hexcode #54f523
+	isColor = x.beginsWith("#");
+	//[\isColor, isColor, \couldBeNumber, couldBeNumber].postln;
+	//x.postcs;
+	if(x == "yellow") {
+		isColor = true;
+		x = "#00FF00";
+	};
+	if(isColor) {
+		Color.fromHexString(x)
+	} {
+		if(couldBeNumber) { x.interpret } { x.asSymbol }
+	}
+};
+
+~unquote = { |x|
+	x.replace("\"", "").replace(" ", "").asSymbol;
+};
+
+~splitConvert = { |x|
+	x !? {
+		x.split($,).collect { |x| ~convert.(x) }.unbubble;
+	}
 };
 
 ~parse = { |x|
@@ -54,8 +87,8 @@ SuperCollider functions for loading Quipu dotfile Datasets
 		rightPart = x[i+1..j-1];
 		rightPart.split($,).do { |a|
 			var pair = a.split($=);
-			var key = ~convert.(pair[0]);
-			var value = ~convert.(pair[1]);
+			var key = ~unquote.(pair[0]);
+			var value = ~splitConvert.(pair[1]);
 			attr[key] = value;
 		};
 		leftPart = x[0..i-2];
@@ -64,9 +97,9 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	};
 	if(isLink) {
 		// links are associations
-		attr[\value] = Association(~convert.(leftPart[..linkIndex-1]), ~convert.(leftPart[linkIndex+2..]));
+		attr[\value] = Association(~unquote.(leftPart[..linkIndex-1]), ~unquote.(leftPart[linkIndex+2..]));
 	} {
-		attr[\value] = ~convert.(leftPart)
+		attr[\value] = ~unquote.(leftPart)
 	};
 };
 
@@ -75,6 +108,28 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	~nodeDict[key]
 };
 
+
+~findParentPendant = { |node|
+	var parentLink;
+	parentLink = ~allLinks.select {|x| x[\value].value == node[\value]}[0];
+	parentLink !? {
+	~nodeDict[parentLink[\value].key]
+	}
+};
+
+~findLevel = { |node|
+	var parent = node, level = 0;
+	while {
+		parent.notNil
+	} {
+		parent = ~findParentPendant.(parent);
+		level = level + 1
+	};
+	level
+};
+
+
+/*
 ~findDown = { |node|
 	var key = node[\value];
 	if(node[\type] == \qnode) {
@@ -87,10 +142,8 @@ SuperCollider functions for loading Quipu dotfile Datasets
 ~findUp = { |node|
 	var key = node[\value];
 	if(node[\type] == \qnode) {
-		var links = ~allNodes.select { |x|
-			x[\type] == \qlink and: {
-				x[\value].value == key;
-			}
+		var links = ~allLinks.select { |x|
+			x[\value].value == key;
 		};
 		links.collect { |x| ~findNode.(x) };
 	} {
@@ -107,5 +160,6 @@ SuperCollider functions for loading Quipu dotfile Datasets
 		}
 	}
 };
+*/
 
 
