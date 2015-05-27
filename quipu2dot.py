@@ -17,6 +17,8 @@
 
 import sys
 import xlrd
+import os
+import math
 
 # functions for parsing the string data
 
@@ -35,6 +37,12 @@ class knot:
         self.type = type
         self.position = position
         self.spin = spin
+
+    def values(self):
+        return 'knot_value="'+str(self.value)+'", '+\
+            'knot_type="'+str(self.type)+'", '+\
+            'knot_position="'+str(self.position)+'", '+\
+            'knot_spin="'+str(self.spin)+'"'
 
     # render the knot to ascii format!
     def render(self):
@@ -115,7 +123,7 @@ def parse_one_colour(s):
     else:
         if s!="":
             print("don't know this colour: ["+s+"]")
-        return "yellow"
+        return '"#000000"'
 
 # we don't differenciate between colour effects yet :(
 def parse_colour(s):
@@ -123,6 +131,7 @@ def parse_colour(s):
     if ":" in s: return map(parse_one_colour,s.split(":"))
     elif "-" in s: return map(parse_one_colour,s.split("-"))
     elif "/" in s: return map(parse_one_colour,s.split("/"))
+    elif "%" in s: return map(parse_one_colour,s.split("%"))
     else: return [parse_one_colour(s)]
 
 # unit tests for the parsing functions
@@ -137,7 +146,7 @@ def unit_test():
     assert(ks[0].position==5.0)
     assert(ks[0].spin=="Z")
     assert(len(parse_knots(""))==0)
-    assert(parse_colour("foo")==["yellow"])
+    assert(parse_colour("foo")==['"#000000"'])
     assert(parse_colour("MB")==['"#673923"'])
     assert(parse_colour("MB:MG")==['"#673923"','"#817066"'])
 
@@ -156,43 +165,75 @@ def parse_to_dot(quipu):
         ply = quipu.cell_value(curr_row, 1)
         attach = quipu.cell_value(curr_row, 2)
         knots = parse_knots(quipu.cell_value(curr_row, 3))
+        length = quipu.cell_value(curr_row, 4)
+        if quipu.cell_type(curr_row, 4)==2: # convert a number to text
+            length = str(length)
         colours = parse_colour(quipu.cell_value(curr_row, 7))
 
         # generate graphviz colour list
         clist = ""
         for i,c in enumerate(colours):
             if i==0:
-                clist+=c
+                clist+=c[1:-1]
             else:
-                clist+=":"+c
+                clist+=","+c[1:-1]
+
+        pendant_values = 'pendant_colors="'+clist+'", '+\
+                         'pendant_ply="'+ply+'", '+\
+                         'pendant_attach="'+attach+'", '+\
+                         'pendant_length="'+length+'"'
+
+        fontcolour = "#000000"
+        if getLum(colours[0]) <= 100: fontcolour = "#ffffff"
 
         # no parent, attach to the primary node
-        if not has_parent(pid):
-            out+='"primary" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
-        else:
-            # otherwise attach to parent
-            out+='"'+get_parent_pendant(pid)+'" -- "'+pid+'" [penwidth=5,color='+colours[0]+']\n'
+        parent = 'primary'
+        if has_parent(pid):  parent=get_parent_pendant(pid)
 
         # describe the node details
-        out+='"'+pid+'" [label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+']\n'
+        out+='"'+pid+'" [qtype="pendant_node", '+pendant_values+', label="'+ply+" "+attach+'", style=filled, fillcolor='+colours[0]+', fontcolor="'+fontcolour+'"]\n'
+        # connection to parent
+        out += '"'+parent+'" -- "'+pid+'" [qtype="pendant_link",penwidth=5,color='+colours[0]+']\n'
 
         # stick the knots on the end of the pendant node
         p = pid
         pos = 0
         for i,knot in enumerate(knots):
             kid = pid+':'+str(i)
-            out+='"'+p+'" -- "'+kid+'" [penwidth=5,color='+colours[0]+']\n'
             pos+=knot.position
-            out+='"'+kid+'" [label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+']\n'
+            out+='"'+kid+'" [qtype="knot_node", '+knot.values()+', label="'+knot.render()+'", style=filled, fillcolor='+colours[0]+' , fontcolor="'+fontcolour+'"]\n'
+            out+='"'+p+'" -- "'+kid+'" [qtype="knot_link",penwidth=5,color='+colours[0]+']\n'
             p = kid
 
     out+="}\n"
     return out
 
+def getLum(hex_color):
+    rgb_int = int("0x" + str(hex_color)[2:-1], 0)
+    blue = rgb_int & 255
+    green = (rgb_int >> 8) & 255
+    red = (rgb_int >> 16) & 255
+    lum = math.sqrt((0.299 * (red ** 2)) + (0.587 * (green ** 2)) + ( 0.144 * (blue ** 2)))
+    return int(lum)
 
-# open the spreadsheet
-workbook = xlrd.open_workbook(sys.argv[1])
-quipu = workbook.sheet_by_name('Pendant Detail')
+def run(filename):
+    print filename
+    # open the spreadsheet
+    try:
+        workbook = xlrd.open_workbook(filename)
+        quipu = workbook.sheet_by_name('Pendant Detail')
+    except Exception:
+        print "problem"
+        return
 
-with open(sys.argv[1]+'.dot', 'w') as f:
-    f.write(parse_to_dot(quipu))
+    with open(filename+'.dot', 'w') as f:
+        f.write(parse_to_dot(quipu))
+
+run(sys.argv[1])
+#run("UR001.xls")
+
+#for i in range(1,32):
+#    num = ("%03d"%i)
+#    filename = "data/xls/HP"+num+".xls"
+#    run(filename)
+#    os.system("dot "+filename+".dot -Tpng > "+filename+".png")
