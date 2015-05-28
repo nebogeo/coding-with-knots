@@ -27,9 +27,9 @@ loadRelative("scquipu-lib.scd");
 ~loadFile.("../data/xl/UR009.xls.dot");
 
 // variants of administrative quipus
+~loadFile.("../data/xl/UR066.xls.dot");
 ~loadFile.("../data/xl/UR067.xls.dot");
 ~loadFile.("../data/xl/UR068.xls.dot");
-~loadFile.("../data/xl/UR066.xls.dot");
 
 
 (
@@ -91,7 +91,6 @@ Tdef(\x, {
 (
 ~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
 ~levels = ~allPendants.collect { |x| ~findLevel.(x) };
-~durations = ~levels.separate { |a, b| b == 1 }.collect { |d| d = 0.5 ** (d - 1); d/d.sum }.flat;
 )
 
 (
@@ -114,7 +113,7 @@ Tdef(\x, {
 				note:note,
 				dur: dur,
 				instrument: \sin,
-				amp: 0.1/3,
+				amp: 0.1,
 				pan: pan,
 				legato:len * 1.5,
 				ply: ply
@@ -127,7 +126,19 @@ Tdef(\x, {
 
 // different schema of calculating durations (the first one sounds actually much nicer ...)
 (
+var accelbase = 1/2; // how much to speed up for each subsidiary level
+var accelexp = 0.5; // how much to broaden the gap for fitting in subsidiaries
+var gap = 0.5; // separates subsidiaries from following pendant. 1 = one full time step
+var subsidiaries = ~levels.separate { |a, b| b == 1 };
+~durations = subsidiaries.collect { |d|
+	d = accelbase ** (d - 1);
+	d[d.lastIndex] = d[d.lastIndex] + gap;
+	d/(d.sum ** accelexp)
+}.flat;
+
 Tdef(\x, {
+
+
 	var pani = ('R':-1, 'V':1, 'U':0);
 	var plyi = ('S': 0, 'Z': 1, 'U': 0.5);
 	~allPendants.do { |x, i|
