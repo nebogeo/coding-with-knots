@@ -43,18 +43,101 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 )
 
 
-(
-~topLevelLinks = ~allLinks.select { |x| x[\value].key == \primary };
-
-~topLevelPendants = ~topLevelLinks.collect { |x|
-	~nodeDict[x[\value].value]
-};
-
-)
-
 ~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
 ~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
 
+
+(
+~goDown = { |name, func, depth = 0|
+	var step, all = ~allLinks.select { |x| x[\value].key == name };
+	func.value(name, depth);
+	step = if(all.size > 1) { 1 } { 0 };
+	all.do { |each|
+		var name = each[\value].value;
+		~goDown.(name, func, depth + step)
+	};
+};
+)
+
+
+~nodeDict.keys.do { |x| ~goDown.(x, _.postln) };
+
+~goDown.(\primary, { |x| x.postln })
+
+~nodeDict.keys.choose;
+
+
+
+// this is knot jazz
+// where there are no knots, we aint play no knots
+// we here the position on the quipu: 1 cm = 100 cents
+
+(
+Tdef(\x, {
+	~goDown.(\primary, { |name, depth|
+		var node, pos, note, dur;
+		node = ~nodeDict[name];
+		if(node.notNil) {
+			dur = ((2/3 ** depth.postln) * 0.24);
+			//dur = 0.1 + 0.01.rand2;
+			pos = node[\knot_position];
+			if(pos.notNil) {
+				note = pos;
+				(note:note, sustain: dur, instrument: \sin).play;
+			} {
+				dur.wait
+			}
+		}
+	})
+}).play
+)
+
+
+
+// quipu calculus: knot value
+(
+Tdef(\x, {
+	~goDown.(\primary, { |name, depth|
+		var node, pos, note, dur;
+		node = ~nodeDict[name];
+		if(node.notNil) {
+			dur = ((0.5 ** depth) * 0.2);
+			//dur = 0.1;
+			pos = node[\knot_position];
+			if(pos.notNil) {
+				note =  node[\knot_value] * 6;
+				(note:note, sustain: dur, instrument: \sin).play;
+			};
+			dur.wait;
+		}
+	})
+}).play
+)
+
+// play knots on the same pendant in parallel: knot position
+(
+Tdef(\x, {
+	~goDown.(\primary, { |name, depth|
+		var node, pos, note, dur;
+		node = ~nodeDict[name];
+		if(node.notNil) {
+			dur = ((2/3 ** depth) * 0.2);
+			//dur = 0.1;
+			pos = node[\knot_position];
+			//var color = node[\fillcolor];
+			if(pos.notNil) {
+				note =  pos * 2; // + ([color.red, color.green, color.blue] * 5);
+				(note: note, sustain: dur, instrument: \sin).play;
+			} {
+				dur.wait;
+			}
+		}
+	})
+}).play
+)
+
+
+/*
 (
 ~allLinks.do { |x| x[\knots] = nil };
 ~allLinks.do { |x|
@@ -72,111 +155,4 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 }; ""
 )
 
-(
-~goDown = { |name, func, depth = 0|
-	var all = ~allLinks.select { |x| x[\value].key == name };
-	func.value(name, depth);
-	all.do { |each|
-		var name = each[\value].value;
-		~goDown.(name, func, depth + 1)
-	};
-};
-)
-
-~nodeDict.keys.do { |x| ~goDown.(x, _.postln) };
-
-~goDown.(\primary, { |x| x.postln })
-
-~nodeDict.keys.choose;
-
-// this is knot jazz
-// where there are no knots, we aint play no knots
-(
-Tdef(\x, {
-	~goDown.(\primary, { |name, depth|
-		var node, pos, note, dur;
-		node = ~nodeDict[name];
-		if(node.notNil) {
-			//dur = ((0.5 ** depth) * 0.5);
-			dur = 0.1;
-			pos = node[\knot_position];
-			//var color = node[\fillcolor];
-			if(pos.notNil) {
-				note =  pos; // + ([color.red, color.green, color.blue] * 5);
-				(note:note, sustain: dur, instrument: \sin).play;
-			};
-			dur.wait;
-		}
-	})
-}).play
-)
-
-// quipu calculus
-(
-Tdef(\x, {
-	~goDown.(\primary, { |name, depth|
-		var node, pos, note, dur;
-		node = ~nodeDict[name];
-		if(node.notNil) {
-			//dur = ((0.5 ** depth) * 0.5);
-			dur = 0.1;
-			pos = node[\knot_position];
-			//var color = node[\fillcolor];
-			if(pos.notNil) {
-				note =  node[\knot_value] * 6;
-				(note:note, sustain: dur, instrument: \sin).play;
-			};
-			dur.wait;
-		}
-	})
-}).play
-)
-
-(
-Tdef(\x, {
-	~goDown.(\primary, { |name, depth|
-		var node, pos, note, dur;
-		node = ~nodeDict[name];
-		if(node.notNil) {
-			//dur = ((0.5 ** depth) * 0.5);
-			dur = 0.1;
-			pos = node[\knot_position];
-			//var color = node[\fillcolor];
-			if(pos.notNil) {
-				note =  pos; // + ([color.red, color.green, color.blue] * 5);
-				(note:note, sustain: dur, instrument: \sin).play;
-				//(dur / (depth + 1)).wait;
-			} {
-				dur.wait;
-			}
-		}
-	})
-}).play
-)
-
-
-~allNodes.select { |x| x[\knots].notNil }
-~allNodes.select { |x| x[\knots].notNil }.collect { |x| x[\knots].collect { |y| y[\knot_position] } }.flat.as(Set).as(Array).sort;
-
-
-~allKnots[0].postln; "";
-
-~allKnots.collect { |x| x[\value] }
-
-// this is knot jazz
-(
-Tdef(\x, {
-	~allNodes.do { |x|
-		var color = x[\fillcolor], note;
-		if(x[\knots].notNil) {
-			note = x[\knots].collect { |y| y[\knot_position] }.postln;
-			(note:note, sustain: 0.1, instrument: \sin).play;
-			0.01.wait;
-		};
-		0.1.wait;
-	}
-}).play
-)
-
-
-
+*/

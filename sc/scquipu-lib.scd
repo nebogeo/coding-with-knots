@@ -8,7 +8,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 ~allNodes
 ~allLinks
-~nodeDict
+~nodeDict // nodes are stored under their value
 
 
 */
@@ -28,7 +28,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
 
 	~nodeDict = ();
-	~allNodes.do { |x| ~nodeDict[x[\value]] = x };
+	~allNodes.do { |x| ~nodeDict[x[\value]] = x;  };
 
 	~findDangling = {
 		~everything.select { |x| x[\type] == \qlink }.select { |x|
