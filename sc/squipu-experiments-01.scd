@@ -7,20 +7,21 @@
 // load library
 loadRelative("scquipu-lib.scd");
 
+
 // load data set
 //~loadFile.("/data/more/dot/UR004.xls.dot");
-//~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/more/dot/HP019.xls.dot");
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR019.xls.dot");
+//~loadFile.("../data/more/dot/HP019.xls.dot");
+~loadFile.("../data/xl/UR019.xls.dot");
 
 //~loadFile.("/Users/wanninger/Dropbox/IMM/Musikinformatik/Projekte/Quipu/data/more/dot/UR004.xls.dot");
 
 // astronomical quipu
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR006.xls.dot");
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR009.xls.dot");
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR067.xls.dot");
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR066.xls.dot");
+~loadFile.("../data/xl/UR006.xls.dot");
+~loadFile.("../data/xl/UR009.xls.dot");
+~loadFile.("../data/xl/UR067.xls.dot");
+~loadFile.("../data/xl/UR066.xls.dot");
 
-~loadFile.("/Users/laborant/Dropbox/Musikinformatik/Projekte/Quipu/data/xl/UR068.xls.dot");
+~loadFile.("../data/xl/UR068.xls.dot");
 
 // many nodes here
 ~nodeDict.keys.size
@@ -31,6 +32,29 @@ loadRelative("scquipu-lib.scd");
 ~allNodes[0].cs
 ~allNodes[1].cs
 ~allLinks[1]
+
+(
+~rangeOf = { |parameter|
+	parameter.asArray.collect {|p|
+		try { [~everything.minItem { |x| x[p] ? inf }[p], ~everything.maxItem { |x| x[p] ? -inf }[p]] }
+	}.unbubble
+};
+~allValuesOf = { |parameter|
+	parameter.asArray.collect {|p|
+		~everything.collect { |x| x[p] }.reject { |x| x.isNil }.as(Set).as(Array).sort
+	}.unbubble
+};
+)
+
+
+~rangeOf.(\knot_position);
+~rangeOf.(\knot_position);
+~allValuesOf.(\knot_position);
+
+
+// some statistics
+~properties = ~everything.collect { |x| x.keys }.inject(Set[], { |a, x| a.addAll(x) });
+~properties.do { |p| try { [p, ~everything.minItem { |x| x[p] ? inf }[p], ~everything.maxItem { |x| x[p] ? 0 }[p]] }.postln}
 
 ~nodeDict['38s1:0'];
 ~nodeDict[1];

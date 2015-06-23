@@ -18,8 +18,8 @@ a lookup table for names of nodes:
 loadRelative("scquipu-lib.scd");
 
 // load data set
-//~loadFile.("/data/more/dot/UR004.xls.dot");
-//~loadFile.("../data/more/dot/HP019.xls.dot");
+~loadFile.("../data/more/dot/UR004.xls.dot");
+~loadFile.("../data/more/dot/HP019.xls.dot");
 ~loadFile.("../data/xl/UR019.xls.dot");
 
 // astronomical quipu
@@ -58,10 +58,10 @@ Tdef(\x, {
 		var color = x[\fillcolor], note;
 		x[\value].postln;
 		if(color != nil) {
-			note =  [color.red, color.green, color.blue] * 32;
-			(note:note, sustain: 0.1, instrument: \sin).play;
+			note =  [color.red, color.green, color.blue] * 32 + 24;
+			(note:note, sustain: 0.08, instrument: \sin).play;
 		};
-		0.1.wait;
+		0.05.wait;
 	}
 }).play
 )
@@ -92,6 +92,10 @@ Tdef(\x, {
 ~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
 ~levels = ~allPendants.collect { |x| ~findLevel.(x) };
 )
+
+// check some colours
+~everything.select { |x| x[\fillcolor].isArray }
+~everything.select { |x| x[\fillcolor] == Color.black }
 
 (
 Tdef(\x, {
