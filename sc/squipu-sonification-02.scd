@@ -34,8 +34,8 @@ loadRelative("scquipu-lib.scd");
 
 (
 SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
-	var attack = blend(0.001, 1, ply) * sustain;
-	var release = blend(1, 0.01, ply) * sustain;
+	var attack = ply.linlin(0, 1, 0.001, 1) * sustain;
+	var release = ply.linlin(0, 1, 1, 0.01) * sustain;
 	var env = EnvGen.ar(Env.perc(attack, release, amp * 3), doneAction:2);
 	var son = SinOsc.ar(freq);
 	OffsetOut.ar(out, Pan2.ar(son, pan, env * AmpCompA.kr(freq)));
@@ -45,11 +45,17 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 
 (
 ~topLevelLinks = ~allLinks.select { |x| x[\value].key == \primary };
-	~topLevelPendants = ~topLevelLinks.collect { |x|
-		~nodeDict[x[\value].value]
-	};
+
+~topLevelPendants = ~topLevelLinks.collect { |x|
+	~nodeDict[x[\value].value]
+};
+
 )
 
+
+(note:[0, 5, 6], sustain: 0.8, instrument: \sin).play;
+(note:[0, 5, 6] + 12, sustain: [0.3, 1.9, 0.8], instrument: \sin).play;
+(note:[0, 5, 6, 9, 11, 22] + 12, sustain: [0.3, 1.9], instrument: \sin).play;
 
 // inka telefax
 (
@@ -108,6 +114,7 @@ Tdef(\x, {
 		dur = 1/2 ** (~findLevel.(x) - 1);
 		dur = (dur / 10);
 		dur.wait;
+
 		if(color != nil) {
 			pan = pani[x[\pendant_attach]];
 			ply = plyi[x[\pendant_ply]];
@@ -115,7 +122,7 @@ Tdef(\x, {
 			note =  [color.red, color.green, color.blue] * 36 + 12;
 			(
 				note:note,
-				dur: dur,
+				dur: dur * 0.9,
 				instrument: \sin,
 				amp: 0.1,
 				pan: pan,

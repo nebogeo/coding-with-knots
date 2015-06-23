@@ -117,6 +117,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	}
 };
 
+// depth of the tree at a given pendant node
 ~findLevel = { |node|
 	var parent = node, level = 0;
 	while {
