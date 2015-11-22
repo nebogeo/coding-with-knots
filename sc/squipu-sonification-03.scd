@@ -43,10 +43,6 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 )
 
 
-~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
-~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
-
-
 (
 ~goDown = { |name, func, depth = 0|
 	var step, all = ~allLinks.select { |x| x[\value].key == name };

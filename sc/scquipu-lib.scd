@@ -13,38 +13,55 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 */
 
-~loadFile = { |path|
-	var string, lines;
+~useEnvir = { |envir, func|
+	if(envir.isNil, func, {
+		envir.parent = currentEnvironment;
+		envir.use(func)
+	});
+};
+
+
+~loadFile = { |path, envir|
+	var string, lines, body;
 	File.use(path.resolveRelative, "r", { |f| string = f.readAllString });
 	lines = string.split(Char.nl);
-	// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
-	~body = lines.select { |x| x.beginsWith("\"") };
 
-	~everything = ~body.collect { |x| ~parse.(x) };
+	~useEnvir.(envir, {
 
-	~allLinks = ~everything.select { |x| x[\type] == \qlink };
-	~allNodes = ~everything.select { |x| x[\type] == \qnode };
-	~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
-	~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
+		// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
+		body = lines.select { |x| x.beginsWith("\"") };
 
-	~nodeDict = ();
-	~allNodes.do { |x| ~nodeDict[x[\value]] = x;  };
+		~everything = body.collect { |x| ~parse.(x) };
 
-	~findDangling = {
+		~allLinks = ~everything.select { |x| x[\type] == \qlink };
+		~allNodes = ~everything.select { |x| x[\type] == \qnode };
+		~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
+		~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
+
+		~nodeDict = ();
+		~allNodes.do { |x| ~nodeDict[x[\value]] = x;  };
+
+		~linkDict = ();
+		~allLinks.do { |x| ~linkDict[x[\value]] = x;  };
+
+		~danglingNodes =
 		~everything.select { |x| x[\type] == \qlink }.select { |x|
 			~nodeDict[x[\value].key].isNil
-		}.collect { |x| x[\value].key }.as(Set)
-	};
+		}.collect { |x| x[\value].key }.as(Set);
 
-	"--- missing nodes: -----".postln;
-	~findDangling.value.postln;
+		"\n\n\n******\nfinished reading %\n".postf(path);
+
+		"--- missing nodes: -----".postln;
+		~danglingNodes.postln;
+
+	});
 
 
 };
 
 ~convert = { |x|
 	var couldBeNumber, isColor;
-	 // in case we later want to encode data with spaces, need to change this.
+	// in case we later want to encode data with spaces, need to change this.
 	x = x.replace(" ", "");
 	x = x.replace("\"", "");
 	couldBeNumber = x.every({ |item, i|  // from wslib
@@ -103,63 +120,95 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	};
 };
 
-~findNode = { |key|
-	//~allNodes.select { |x| x[\type] == \qnode and: { x[\value] == key } }
-	~nodeDict[key]
-};
 
 
-~findParentPendant = { |node|
-	var parentLink;
-	parentLink = ~allLinks.select {|x| x[\value].value == node[\value]}[0];
-	parentLink !? {
-	~nodeDict[parentLink[\value].key]
-	}
+// untested functions //
+
+~findParentPendant = { |node, envir|
+	~useEnvir.(envir, {
+		var parentLink;
+		parentLink = ~allLinks.select {|x| x[\value].value == node[\value]}[0];
+		parentLink !? {
+			~nodeDict[parentLink[\value].key]
+		}
+	})
 };
 
 // depth of the tree at a given pendant node
-~findLevel = { |node|
-	var parent = node, level = 0;
-	while {
-		parent.notNil
-	} {
-		parent = ~findParentPendant.(parent);
-		level = level + 1
-	};
-	level
+~findLevel = { |node, envir|
+	~useEnvir.(envir, {
+		var parent = node, level = 0;
+		while {
+			parent.notNil
+		} {
+			parent = ~findParentPendant.(parent);
+			level = level + 1
+		};
+		level
+	})
 };
+
+~goDown = { |name, func, depth = 0|
+	var step, all = ~allLinks.select { |x| x[\value].key == name };
+	func.value(name, depth);
+	step = if(all.size > 1) { 1 } { 0 };
+	all.do { |each|
+		var name = each[\value].value;
+		~goDown.(name, func, depth + step)
+	};
+};
+
+// untested:
+
+~findUp = { |node|
+	var links;
+	var key = node[\value];
+	if(node[\type] == \qnode) {
+		links = ~allLinks.select { |x|
+			x[\value].value == key;
+		};
+		links.collect { |x| ~nodeDict[x] };
+	} {
+		[~nodeDict[node[\value].key]];
+	}
+};
+
 
 
 /*
+
+~findNode = { |key, envir|
+~nodeDict[key]
+};
 ~findDown = { |node|
-	var key = node[\value];
-	if(node[\type] == \qnode) {
-		var links = ~allLinks.select { |x| x[\value].key == key };
-		links.collect { |x| ~findNode.(x[\value].value) };
-	} {
-		[~findNode.(node[\value].value)];
-	}
+var key = node[\value];
+if(node[\type] == \qnode) {
+var links = ~allLinks.select { |x| x[\value].key == key };
+links.collect { |x| ~findNode.(x[\value].value) };
+} {
+[~findNode.(node[\value].value)];
+}
 };
 ~findUp = { |node|
-	var key = node[\value];
-	if(node[\type] == \qnode) {
-		var links = ~allLinks.select { |x|
-			x[\value].value == key;
-		};
-		links.collect { |x| ~findNode.(x) };
-	} {
-		[~findNode.(node[\value].key)];
-	}
+var key = node[\value];
+if(node[\type] == \qnode) {
+var links = ~allLinks.select { |x|
+x[\value].value == key;
+};
+links.collect { |x| ~findNode.(x) };
+} {
+[~findNode.(node[\value].key)];
+}
 };
 
 ~asTree = { |nodes|
-	nodes.collect { |x, i|
-		if(x[\type] == \qlink) {
-			~asTree.(~findDown.(x))
-		} {
-			x
-		}
-	}
+nodes.collect { |x, i|
+if(x[\type] == \qlink) {
+~asTree.(~findDown.(x))
+} {
+x
+}
+}
 };
 */
 
