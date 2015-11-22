@@ -25,7 +25,7 @@ arguments:
 */
 
 ~data = ();
-~loadFile.("../data/xl/UR006.xls.dot", ~data);
+~loadFile.("../data/xl/UR019.xls.dot", ~data);
 ~data
 ~data.keys // these are the fields generated
 
@@ -88,6 +88,11 @@ pendant_colors
 // ~everything is an array of all data points.
 ~data.everything
 
+// ~topNodes are the nodes connected to the long primary chord
+~topNodes;
+~topNodes.size;
+
+
 // you can derive all data enries like this:
 ~allKnotData = ~data.nodeDict.values.select { |x| x[\qtype] == \knot_node }.flopDict.collect(_.as(Set));
 ~allKnotData.keys // all entry fields
@@ -95,7 +100,16 @@ pendant_colors
 ~allKnotData[\knot_type] // e.g. all existing knot types etc.
 
 
+/*
 
+the function ~goDown lets you traverse downward, starting from a given id.
+The function is called with two arguments:
+	# name of the respective node
+	# recursion depth in which you currently are
 
+*/
+
+~goDown.(\primary, { |x, depth| [x, depth].postln });
+~goDown.('4', { |x, depth| [x, depth].postln });
 
 

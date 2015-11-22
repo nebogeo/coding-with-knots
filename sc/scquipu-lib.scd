@@ -45,11 +45,20 @@ SuperCollider functions for loading Quipu dotfile Datasets
 		~allLinks.do { |x| ~linkDict[x[\value]] = x;  };
 
 		~danglingNodes =
-		~everything.select { |x| x[\type] == \qlink }.select { |x|
+		~allLinks.select { |x|
 			~nodeDict[x[\value].key].isNil
 		}.collect { |x| x[\value].key }.as(Set);
 
-		"\n\n\n******\nfinished reading %\n".postf(path);
+		~topLinks = ~allLinks.select { |x|
+			x[\value].key == \primary
+		};
+
+		~topNodes = ~topLinks.collect { |x|
+			~nodeDict[x[\value].value]
+		};
+
+		"\n\n\n******\nfinished reading. %\n".postf(path);
+		"number of nodes in quipu '%': %\n".postf(path.basename, ~allNodes.size);
 
 		"--- missing nodes: -----".postln;
 		~danglingNodes.postln;
@@ -122,6 +131,19 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 
 
+~goDown = { |name, func, depth = 0|
+	var step, all = ~allLinks.select { |x| x[\value].key == name };
+	func.value(name, depth);
+	step = if(all.size > 1) { 1 } { 0 };
+	all.do { |each|
+		var name = each[\value].value;
+		~goDown.(name, func, depth + step)
+	};
+};
+
+
+
+
 // untested functions //
 
 ~findParentPendant = { |node, envir|
@@ -148,17 +170,6 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	})
 };
 
-~goDown = { |name, func, depth = 0|
-	var step, all = ~allLinks.select { |x| x[\value].key == name };
-	func.value(name, depth);
-	step = if(all.size > 1) { 1 } { 0 };
-	all.do { |each|
-		var name = each[\value].value;
-		~goDown.(name, func, depth + step)
-	};
-};
-
-// untested:
 
 ~findUp = { |node|
 	var links;
