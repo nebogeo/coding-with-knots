@@ -34,6 +34,7 @@ Each data entry has the following fields.
 
 --type--	\qlink (for a link between nodes) or \qnode (for a node, i.e. a knot or a pendant)
 --qtype--	\pendant_node or \knot_node
+--value--   this is the id according to archeological data. for qlinks, this is an association between two ids
 
 Then a number of arguments, which are related to the dot file visualisation
 
@@ -49,14 +50,14 @@ knot_type
 knot_position
 knot_value
 knot_spin
-value
+
 
 --for pendants--
 pendant_length
 pendant_ply
 pendant_attach
 pendant_colors
-value
+
 
 */
 
