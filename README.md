@@ -15,6 +15,12 @@ This project is a side thread of the [weavingcodes](http://kairotic.org) project
 
 Command line:
 
+Individual xls spreadsheet:
+
     $ ./quipu2dot.py UR001.xls
     $ dot UR001.xls.dot -Tpng > UR001.png
+
+Batch mode, does convertion and runs dot (assumes location is data/xls):
+
+    $ ./quipu2dot.py batch
 

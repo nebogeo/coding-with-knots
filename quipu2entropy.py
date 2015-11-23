@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Quipu database to dot graphs
+# Quipu database to entropy
 # Copyright (C) 2015 Dave Griffiths, Florian Zeeh
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -17,12 +17,12 @@
 
 import sys
 import os
-import xlrd
-from quipulib import *
+import quipu
 
-# convert a database spreadsheet into a dot file for visualisation
-def parse_to_dot(quipu):
-    out = "graph {\n graph [rankdir=LR]\n"
+# maximise 'native' entropy
+# todo: try filtering
+def parse_to_raw(quipu):
+    out = ""
     # skip the gumpf at the top, start on the 6th line
     for curr_row in range(6,quipu.nrows):
         # get the stuff from the row
@@ -38,7 +38,6 @@ def parse_to_dot(quipu):
         colours = parse_colour(quipu.cell_value(curr_row, 7))
         value = quipu.cell_value(curr_row, 8)
 
-
         # generate graphviz colour list
         clist = ""
         for i,c in enumerate(colours):
@@ -47,42 +46,15 @@ def parse_to_dot(quipu):
             else:
                 clist+=":"+c[1:-1]
 
-        pendant_values = 'pendant_colors="'+clist+'", '+\
-                         'pendant_ply="'+ply+'", '+\
-                         'pendant_attach="'+attach+'", '+\
-                         'pendant_length="'+length+'"'
-
-        fontcolour = "#000000"
-        if getLum(colours[0]) <= 100: fontcolour = "#ffffff"
-
-        penwidth="5"
-        if len(colours)>1: penwidth="2"
-
-        # no parent, attach to the primary node
-        parent = 'primary'
-        if has_parent(pid):  parent=get_parent_pendant(pid)
-
+        pendant_values = clist+ply+attach+length
         # describe the node details
-        out+='"'+pid+'" [qtype="pendant_node", '+pendant_values+', label="'+ply+" "+attach+'", style=filled, fillcolor="'+clist+'", fontcolor="'+fontcolour+'"]\n'
-        # connection to parent
-        out += '"'+parent+'" -- "'+pid+'" [qtype="pendant_link",penwidth='+penwidth+',color="'+clist+'"]\n'
-
-        # stick the knots on the end of the pendant node
-        p = pid
-        pos = 0
+        out+=pid+pendant_values;
         for i,knot in enumerate(knots):
-            kid = pid+':'+str(i)
-            pos+=knot.position
-            out+='"'+kid+'" [qtype="knot_node", '+knot.values()+', label="'+knot.render()+'", style=filled, fillcolor="'+clist+'" , fontcolor="'+fontcolour+'"]\n'
-            out+='"'+p+'" -- "'+kid+'" [qtype="knot_link",penwidth='+penwidth+',color="'+clist+'"]\n'
-            p = kid
+            out+=knot.values()
 
-    out+="}\n"
     return out
 
-
-# create the dotfile
-def run(filename):
+def calculate_entropy(filename):
     print filename
     # open the spreadsheet
     try:
@@ -93,15 +65,5 @@ def run(filename):
         return False
 
     with open(filename+'.dot', 'w') as f:
-        f.write(parse_to_dot(quipu))
+        f.write(parse_to_raw(quipu))
     return True
-
-def batch_generate_dot(filenames):
-    for filename in filenames:
-        if run(filename):
-            os.system("dot "+filename+".dot -Tpng > "+filename+".png")
-
-if sys.argv[1]=="batch":
-    batch_generate_dot(generate_quipu_list())
-else:
-    run(sys.argv[1])
