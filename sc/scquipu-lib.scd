@@ -4,16 +4,16 @@
 
 SuperCollider functions for loading Quipu dotfile Datasets
 
-~loadFile populates:
+~load_file populates:
 
-~allNodes
-~allLinks
-~nodeDict // nodes are stored under their value
+~all_nodes
+~all_links
+~node_dict // nodes are stored under their value
 
 
 */
 
-~useEnvir = { |envir, func|
+~use_envir = { |envir, func|
 	if(envir.isNil, func, {
 		envir.parent = currentEnvironment;
 		envir.use(func)
@@ -21,54 +21,54 @@ SuperCollider functions for loading Quipu dotfile Datasets
 };
 
 
-~loadFile = { |path, envir|
+~load_file = { |path, envir|
 	var string, lines, body;
 	File.use(path.resolveRelative, "r", { |f| string = f.readAllString });
 	lines = string.split(Char.nl);
 
-	~useEnvir.(envir, {
+	~use_envir.(envir, {
 
 		// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
 		body = lines.select { |x| x.beginsWith("\"") };
 
-		~everything = body.collect { |x| ~parse.(x) };
+		~all_entries = body.collect { |x| ~parse_dotfile.(x) };
 
-		~allLinks = ~everything.select { |x| x[\type] == \qlink };
-		~allNodes = ~everything.select { |x| x[\type] == \qnode };
-		~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
-		~allKnots = ~allNodes.select {|x| x[\qtype] == \knot_node };
+		~all_links = ~all_entries.select { |x| x[\type] == \qlink };
+		~all_nodes = ~all_entries.select { |x| x[\type] == \qnode };
+		~all_pendants = ~all_nodes.select {|x| x[\qtype] == \pendant_node };
+		~all_knots = ~all_nodes.select {|x| x[\qtype] == \knot_node };
 
-		~nodeDict = ();
-		~allNodes.do { |x| ~nodeDict[x[\value]] = x;  };
+		~node_dict = ();
+		~all_nodes.do { |x| ~node_dict[x[\value]] = x;  };
 
-		~linkDict = ();
-		~allLinks.do { |x| ~linkDict[x[\value]] = x;  };
+		~link_dict = Dictionary.new; // reproduced associations are not identical
+		~all_links.do { |x| ~link_dict[x[\value]] = x;  };
 
-		~danglingNodes =
-		~allLinks.select { |x|
-			~nodeDict[x[\value].key].isNil
+		~dangling_nodes =
+		~all_links.select { |x|
+			~node_dict[x[\value].key].isNil
 		}.collect { |x| x[\value].key }.as(Set);
 
-		~topLinks = ~allLinks.select { |x|
+		~top_links = ~all_links.select { |x|
 			x[\value].key == \primary
 		};
 
-		~topNodes = ~topLinks.collect { |x|
-			~nodeDict[x[\value].value]
+		~top_nodes = ~top_links.collect { |x|
+			~node_dict[x[\value].value]
 		};
 
 		"\n\n\n******\nfinished reading. %\n".postf(path);
-		"number of nodes in quipu '%': %\n".postf(path.basename, ~allNodes.size);
+		"number of nodes in quipu '%': %\n".postf(path.basename, ~all_nodes.size);
 
 		"--- missing nodes: -----".postln;
-		~danglingNodes.postln;
+		~dangling_nodes.postln;
 
 	});
 
-
+	envir
 };
 
-~convert = { |x|
+~convert_string = { |x|
 	var couldBeNumber, isColor;
 	// in case we later want to encode data with spaces, need to change this.
 	x = x.replace(" ", "");
@@ -92,17 +92,17 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	}
 };
 
-~unquote = { |x|
+~unquote_string = { |x|
 	x.replace("\"", "").replace(" ", "").asSymbol;
 };
 
-~splitConvert = { |x|
+~split_convert = { |x|
 	x !? {
-		x.split($,).collect { |x| ~convert.(x) }.unbubble;
+		x.split($,).collect { |x| ~convert_string.(x) }.unbubble;
 	}
 };
 
-~parse = { |x|
+~parse_dotfile = { |x|
 	var i, j, attr = (), leftPart, rightPart;
 	var linkIndex = x.find("--");
 	var isLink = linkIndex.notNil;
@@ -113,8 +113,8 @@ SuperCollider functions for loading Quipu dotfile Datasets
 		rightPart = x[i+1..j-1];
 		rightPart.split($,).do { |a|
 			var pair = a.split($=);
-			var key = ~unquote.(pair[0]);
-			var value = ~splitConvert.(pair[1]);
+			var key = ~unquote_string.(pair[0]);
+			var value = ~split_convert.(pair[1]);
 			attr[key] = value;
 		};
 		leftPart = x[0..i-2];
@@ -123,104 +123,107 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	};
 	if(isLink) {
 		// links are associations
-		attr[\value] = Association(~unquote.(leftPart[..linkIndex-1]), ~unquote.(leftPart[linkIndex+2..]));
+		attr[\value] = Association(~unquote_string.(leftPart[..linkIndex-1]), ~unquote_string.(leftPart[linkIndex+2..]));
 	} {
-		attr[\value] = ~unquote.(leftPart)
+		attr[\value] = ~unquote_string.(leftPart)
 	};
-};
-
-
-
-~goDown = { |name, func, depth = 0|
-	var step, all = ~allLinks.select { |x| x[\value].key == name };
-	func.value(name, depth);
-	step = if(all.size > 1) { 1 } { 0 };
-	all.do { |each|
-		var name = each[\value].value;
-		~goDown.(name, func, depth + step)
-	};
-};
-
-
-
-
-// untested functions //
-
-~findParentPendant = { |node, envir|
-	~useEnvir.(envir, {
-		var parentLink;
-		parentLink = ~allLinks.select {|x| x[\value].value == node[\value]}[0];
-		parentLink !? {
-			~nodeDict[parentLink[\value].key]
-		}
-	})
-};
-
-// depth of the tree at a given pendant node
-~findLevel = { |node, envir|
-	~useEnvir.(envir, {
-		var parent = node, level = 0;
-		while {
-			parent.notNil
-		} {
-			parent = ~findParentPendant.(parent);
-			level = level + 1
-		};
-		level
-	})
-};
-
-
-~findUp = { |node|
-	var links;
-	var key = node[\value];
-	if(node[\type] == \qnode) {
-		links = ~allLinks.select { |x|
-			x[\value].value == key;
-		};
-		links.collect { |x| ~nodeDict[x] };
-	} {
-		[~nodeDict[node[\value].key]];
-	}
 };
 
 
 
 /*
 
-~findNode = { |key, envir|
-~nodeDict[key]
+Navigation
+
+*/
+
+
+
+// depth of the tree at a given pendant node
+~find_level = { |node, envir|
+	~use_envir.(envir, {
+		var parent = node, level = 0;
+		while {
+			parent.notNil
+		} {
+			parent = ~find_parentPendant.(parent, envir);
+			level = level + 1
+		};
+		level
+	})
 };
-~findDown = { |node|
+
+~find_parentPendant = { |node, envir|
+	~use_envir.(envir, {
+		var parentLink;
+		parentLink = ~all_links.select {|x| x[\value].value == node[\value] }[0];
+		parentLink !? {
+			~node_dict[parentLink[\value].key]
+		}
+	})
+};
+
+
+
+// untested functions //
+
+
+~go_down = { |envir, name, func, depth = 0|
+	~use_envir.(envir, {
+		var step, all = ~all_links.select { |x| x[\value].key == name };
+		func.value(name, depth);
+		step = if(all.size > 1) { 1 } { 0 };
+		all.do { |each|
+			var name = each[\value].value;
+			~go_down.(envir, name, func, depth + step)
+		};
+	})
+};
+
+
+~find_up = { |node, envir|
+	~useEnvir.(envir, {
+		var links;
+		var key = node[\value];
+		if(node[\type] == \qnode) {
+			links = ~all_links.select { |x|
+				x[\value].value == key;
+			};
+			links.collect { |x| ~node_dict[x] };
+		} {
+			[~node_dict[node[\value].key]];
+		}
+	})
+};
+
+~find_down = { |node, envir|
+	~useEnvir.(envir, {
+		var links, key = node[\value];
+		if(node[\type] == \qnode) {
+			links = ~all_links.select { |x| x[\value].key == key };
+			links.collect { |x| ~node_dict[x[\value].value] };
+		} {
+			[~node_dict[x[\value].value]];
+		}
+	})
+};
+
+/*
+
+
+
+~find_up = { |node|
 var key = node[\value];
 if(node[\type] == \qnode) {
-var links = ~allLinks.select { |x| x[\value].key == key };
-links.collect { |x| ~findNode.(x[\value].value) };
-} {
-[~findNode.(node[\value].value)];
-}
-};
-~findUp = { |node|
-var key = node[\value];
-if(node[\type] == \qnode) {
-var links = ~allLinks.select { |x|
+var links = ~all_links.select { |x|
 x[\value].value == key;
 };
-links.collect { |x| ~findNode.(x) };
+links.collect { |x| ~find_node.(x) };
 } {
-[~findNode.(node[\value].key)];
+[~find_node.(node[\value].key)];
 }
 };
 
-~asTree = { |nodes|
-nodes.collect { |x, i|
-if(x[\type] == \qlink) {
-~asTree.(~findDown.(x))
-} {
-x
-}
-}
-};
 */
 
 

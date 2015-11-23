@@ -14,7 +14,7 @@ loadRelative("scquipu-lib.scd");
 
 this defines the following function
 
-~load_file.(path, envir)
+~loadFile.(path, envir)
 
 load a dot file (written by quipu2dot.py).
 
@@ -25,7 +25,7 @@ arguments:
 */
 
 ~data = ();
-~load_file.("../data/xl/UR019.xls.dot", ~data);
+~loadFile.("../data/xl/UR019.xls.dot", ~data);
 ~data
 ~data.keys // these are the fields generated
 
@@ -64,37 +64,37 @@ pendant_colors
 
 /*
 
-~load_files provides the following things:
+~loadFiles provides the following things:
 
 */
 
-// ~node_dict is a dictionary of all nodes (excluding links)
+// ~nodeDict is a dictionary of all nodes (excluding links)
 
-~data.node_dict; // all nodes accessible by id
-~data.node_dict.keys.do { |key| key.postln }; // these are the ids, as given in the literature
-~data.node_dict.values.collect { |x| x[\qtype] }.as(Set); // all qtypes
+~data.nodeDict; // all nodes accessible by id
+~data.nodeDict.keys.do { |key| key.post; " ".post }; // these are the ids, as given in the literature
+~data.nodeDict.values.collect { |x| x[\qtype] }.as(Set); // all qtypes
 
-// ~link_dict dictionary of all nodes (excluding links)
-~data.link_dict // all links accessible by id
-~data.link_dict.keys.do { |key| key.postln }; // these are the ids: associations between node ids
-~data.link_dict.values.collect { |x| x[\qtype] }.as(Set); // all qtypes
+// ~linkDict dictionary of all nodes (excluding links)
+~data.linkDict // all links accessible by id
+~data.linkDict.keys.do { |key| key.post; " ".post }; // these are the ids: associations between node ids
+~data.linkDict.values.collect { |x| x[\qtype] }.as(Set); // all qtypes
 
-// ~all_pendants is an array of all nodes that are pendants (threads)
-~data.all_pendants;
+// ~allPendants is an array of all nodes that are pendants (threads)
+~data.allPendants;
 
-// ~all_knots is an array of all nodes that are knots.
-~data.all_knots;
+// ~allKnots is an array of all nodes that are knots.
+~data.allKnots;
 
-// ~all_entries is an array of all data points.
-~data.all_entries
+// ~everything is an array of all data points.
+~data.everything
 
-// ~top_nodes are the nodes connected to the long primary chord
-~data.top_nodes;
-~data.top_nodes.size;
+// ~topNodes are the nodes connected to the long primary chord
+~topNodes;
+~topNodes.size;
 
 
 // you can derive all data enries like this:
-~allKnotData = ~data.node_dict.values.select { |x| x[\qtype] == \knot_node }.flopDict.collect(_.as(Set));
+~allKnotData = ~data.nodeDict.values.select { |x| x[\qtype] == \knot_node }.flopDict.collect(_.as(Set));
 ~allKnotData.keys // all entry fields
 ~allKnotData[\knot_position] // e.g. all existing knot positions
 ~allKnotData[\knot_type] // e.g. all existing knot types etc.
@@ -102,14 +102,14 @@ pendant_colors
 
 /*
 
-the function ~go_down lets you traverse downward, starting from a given id.
+the function ~goDown lets you traverse downward, starting from a given id.
 The function is called with two arguments:
 	# name of the respective node
 	# recursion depth in which you currently are
 
 */
 
-~go_down.(\primary, { |x, depth| [x, depth].postln });
-~go_down.('4', { |x, depth| [x, depth].postln });
+~goDown.(\primary, { |x, depth| [x, depth].postln });
+~goDown.('4', { |x, depth| [x, depth].postln });
 
 

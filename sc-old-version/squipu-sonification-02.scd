@@ -1,16 +1,16 @@
 /*
 
 we have nodes and links:
-~data.all_nodes
-~all_links
+~allNodes
+~allLinks
 
 
 nodes are of two types:
-~data.all_pendants
+~allPendants
 ~allKnots
 
 a lookup table for names of nodes:
-~data.node_dict
+~nodeDict
 
 */
 
@@ -18,19 +18,18 @@ a lookup table for names of nodes:
 loadRelative("scquipu-lib.scd");
 
 // load data set
-~load_file.("../data/more/dot/UR004.xls.dot", ~data = ());
-~load_file.("../data/more/dot/HP019.xls.dot", ~data = ());
-~load_file.("../data/xl/UR019.xls.dot", ~data = ());
+~loadFile.("../data/more/dot/UR004.xls.dot");
+~loadFile.("../data/more/dot/HP019.xls.dot");
+~loadFile.("../data/xl/UR019.xls.dot");
 
 // astronomical quipu
-~load_file.("../data/xl/UR006.xls.dot", ~data = ());
-~load_file.("../data/xl/UR009.xls.dot", ~data = ());
+~loadFile.("../data/xl/UR006.xls.dot");
+~loadFile.("../data/xl/UR009.xls.dot");
 
 // variants of administrative quipus
-~load_file.("../data/xl/UR066.xls.dot", ~data = ());
-~load_file.("../data/xl/UR067.xls.dot", ~data = ());
-~load_file.("../data/xl/UR068.xls.dot", ~data = ());
-
+~loadFile.("../data/xl/UR066.xls.dot");
+~loadFile.("../data/xl/UR067.xls.dot");
+~loadFile.("../data/xl/UR068.xls.dot");
 
 
 (
@@ -45,10 +44,10 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 
 
 (
-~top_links = ~data.all_links.select { |x| x[\value].key == \primary };
+~topLevelLinks = ~allLinks.select { |x| x[\value].key == \primary };
 
-~top_pendants = ~top_links.collect { |x|
-	~data.node_dict[x[\value].value]
+~topLevelPendants = ~topLevelLinks.collect { |x|
+	~nodeDict[x[\value].value]
 };
 
 )
@@ -61,7 +60,7 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 // inka telefax
 (
 Tdef(\x, {
-	~top_pendants.do { |x|
+	~topLevelPendants.do { |x|
 		var color = x[\fillcolor], note;
 		x[\value].postln;
 		if(color != nil) {
@@ -72,11 +71,10 @@ Tdef(\x, {
 	}
 }).play
 )
-
 // inka telefax
 (
 Tdef(\x, {
-	~top_pendants.do { |x|
+	~topLevelPendants.do { |x|
 		var color = x[\fillcolor], note;
 		x[\value].postln;
 		if(color != nil) {
@@ -90,29 +88,30 @@ Tdef(\x, {
 
 
 
-~find_parentPendant.(~data.all_nodes[4], ~data); // find parent link
-~find_level.(~data.all_nodes[4], ~data); // find parent link
-~find_level.(~data.all_nodes[3], ~data); // find parent link
-~find_level.(~data.all_nodes[0], ~data); // find parent link
-~find_level.(~data.all_nodes[5], ~data); // find parent link
+~findParentPendant.(~allNodes[4]); // find parent link
+~findLevel.(~allNodes[4]); // find parent link
+~findLevel.(~allNodes[3]); // find parent link
+~findLevel.(~allNodes[0]); // find parent link
+~findLevel.(~allNodes[5]); // find parent link
 
-
-~levels = ~data.all_pendants.collect { |x| ~data.find_level.(x, ~data) };
-
+(
+~allPendants = ~allNodes.select {|x| x[\qtype] == \pendant_node };
+~levels = ~allPendants.collect { |x| ~findLevel.(x) };
+)
 
 // check some colours
-~data.all_entries.select { |x| x[\fillcolor].isArray }
-~data.all_entries.select { |x| x[\fillcolor] == Color.black }
+~everything.select { |x| x[\fillcolor].isArray }
+~everything.select { |x| x[\fillcolor] == Color.black }
 
 (
 Tdef(\x, {
 	var pani = ('R':-1, 'V':1, 'U':0);
 	var plyi = ('S': 0, 'Z': 1, 'U': 0.5);
-	~data.all_pendants.do { |x|
+	~allPendants.do { |x|
 		var color = x[\fillcolor], note, pan, len, ply;
 		var dur;
 		//x[\value].postln;
-		dur = 1/2 ** (~find_level.(x, ~data) - 1);
+		dur = 1/2 ** (~findLevel.(x) - 1);
 		dur = (dur / 10);
 		dur.wait;
 
@@ -136,18 +135,13 @@ Tdef(\x, {
 }).play
 )
 
-
 // different schema of calculating durations (the first one sounds actually much nicer ...)
 (
 var accelbase = 1/2; // how much to speed up for each subsidiary level
 var accelexp = 0.5; // how much to broaden the gap for fitting in subsidiaries
 var gap = 0.5; // separates subsidiaries from following pendant. 1 = one full time step
-var subsidiaries, levels, durations;
-
-levels = ~data.all_pendants.collect { |x| ~find_level.(x, ~data) };
-subsidiaries = levels.separate { |a, b| b == 1 };
-
-durations = subsidiaries.collect { |d|
+var subsidiaries = ~levels.separate { |a, b| b == 1 };
+~durations = subsidiaries.collect { |d|
 	d = accelbase ** (d - 1);
 	d[d.lastIndex] = d[d.lastIndex] + gap;
 	d/(d.sum ** accelexp)
@@ -158,11 +152,11 @@ Tdef(\x, {
 
 	var pani = ('R':-1, 'V':1, 'U':0);
 	var plyi = ('S': 0, 'Z': 1, 'U': 0.5);
-	~data.all_pendants.do { |x, i|
+	~allPendants.do { |x, i|
 		var color = x[\fillcolor], note, pan, len, ply;
 		var dur;
 		//x[\value].postln;
-		dur = durations[i] * 0.1;
+		dur = ~durations[i] * 0.1;
 
 		if(color != nil) {
 			pan = pani[x[\pendant_attach]];
