@@ -16,7 +16,5 @@ This project is a side thread of the [weavingcodes](http://kairotic.org) project
 Command line:
 
     $ ./quipu2dot.py UR001.xls
-    $ dot UR001.xls.dot -tPNG > UR001.png
-
-(for mac-users dot arguments are different(?) :)
     $ dot UR001.xls.dot -Tpng > UR001.png
+

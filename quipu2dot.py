@@ -315,13 +315,16 @@ def run_all():
         if run(filename):
             os.system("dot "+filename+".dot -Tpng > "+filename+".png")
 
-run_all()
+#run_all()
 
 
-#run(sys.argv[1])
+run(sys.argv[1])
 #run("data/xls/UR006.xls")
 
-print(unknown_colours)
+
+
+
+#print(unknown_colours)
 
 
 #uk = {u'BD': 17, u'BB': 342, u'BL': 203, u'DG': 9, u'DB -W': 1, u'ABB': 1, u'YG': 369, u'FB': 47, u'MB-W': 2, u'AB-W': 1, u'GG%AB': 3, u'BY': 131, u'WGSRMG': 3, u'LG': 105, u'W-MB': 3, u'BLRL': 1, u'LB': 848, u'LC': 63, u'MB-MB': 4, u'LA': 15, u'BS': 24, u'NB': 163, u'GLSRYBMG': 1, u'ABMB': 1, u'LK': 206, u'GLSRYBWMG': 1, u'PB': 28, u'MB-CB': 3, u'RG': 24, u'RB': 484, u'PK': 50, 'foo': 1, u'GGAB': 1, u'WGG': 1, u'R0': 8, u'GR': 5, u'G': 96, u'VG': 15, u'CB': 340, u'-': 1, u'LD': 3, u'GY': 23, u'EB': 24, u'VR': 32, u'R': 126, u'0G': 112, u'0D': 7, u'ABW': 1, u'WMB': 1, u'GL': 22, u'0L': 13, u'LG-AB': 1, u'SY': 18, u'MBW': 8, u'KG': 16, u'LBW': 1, u'G0': 107, u'W-W': 30, u'KB-GG': 1, u'VB': 64, u'TG': 10, u'DB W': 1, u'LK-W': 36, u'SB': 6, u'D0': 2, u'GB': 8}
