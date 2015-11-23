@@ -13,59 +13,46 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 */
 
-~use_envir = { |envir, func|
-	if(envir.isNil, func, {
-		envir.parent = currentEnvironment;
-		envir.use(func)
-	});
-};
 
-
-~load_file = { |path, envir|
+~load_file = { |path|
 	var string, lines, body;
 	File.use(path.resolveRelative, "r", { |f| string = f.readAllString });
 	lines = string.split(Char.nl);
 
-	~use_envir.(envir, {
+	// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
+	body = lines.select { |x| x.beginsWith("\"") };
 
-		// all nodes and links begin with the form "xyz" -> "abc" or "xyz"
-		body = lines.select { |x| x.beginsWith("\"") };
+	~all_entries = body.collect { |x| ~parse_dotfile.(x) };
 
-		~all_entries = body.collect { |x| ~parse_dotfile.(x) };
+	~all_links = ~all_entries.select { |x| x[\type] == \qlink };
+	~all_nodes = ~all_entries.select { |x| x[\type] == \qnode };
+	~all_pendants = ~all_nodes.select {|x| x[\qtype] == \pendant_node };
+	~all_knots = ~all_nodes.select {|x| x[\qtype] == \knot_node };
 
-		~all_links = ~all_entries.select { |x| x[\type] == \qlink };
-		~all_nodes = ~all_entries.select { |x| x[\type] == \qnode };
-		~all_pendants = ~all_nodes.select {|x| x[\qtype] == \pendant_node };
-		~all_knots = ~all_nodes.select {|x| x[\qtype] == \knot_node };
+	~node_dict = ();
+	~all_nodes.do { |x| ~node_dict[x[\value]] = x;  };
 
-		~node_dict = ();
-		~all_nodes.do { |x| ~node_dict[x[\value]] = x;  };
+	~link_dict = Dictionary.new; // reproduced associations are not identical
+	~all_links.do { |x| ~link_dict[x[\value]] = x;  };
 
-		~link_dict = Dictionary.new; // reproduced associations are not identical
-		~all_links.do { |x| ~link_dict[x[\value]] = x;  };
+	~dangling_nodes =
+	~all_links.select { |x|
+		~node_dict[x[\value].key].isNil
+	}.collect { |x| x[\value].key }.as(Set);
 
-		~dangling_nodes =
-		~all_links.select { |x|
-			~node_dict[x[\value].key].isNil
-		}.collect { |x| x[\value].key }.as(Set);
+	~top_links = ~all_links.select { |x|
+		x[\value].key == \primary
+	};
 
-		~top_links = ~all_links.select { |x|
-			x[\value].key == \primary
-		};
+	~top_nodes = ~top_links.collect { |x|
+		~node_dict[x[\value].value]
+	};
 
-		~top_nodes = ~top_links.collect { |x|
-			~node_dict[x[\value].value]
-		};
+	"\n\n\n******\nfinished reading. %\n".postf(path);
+	"number of nodes in quipu '%': %\n".postf(path.basename, ~all_nodes.size);
 
-		"\n\n\n******\nfinished reading. %\n".postf(path);
-		"number of nodes in quipu '%': %\n".postf(path.basename, ~all_nodes.size);
-
-		"--- missing nodes: -----".postln;
-		~dangling_nodes.postln;
-
-	});
-
-	envir
+	"--- missing nodes: -----".postln;
+	~dangling_nodes.postln;
 };
 
 ~convert_string = { |x|
@@ -140,27 +127,23 @@ Navigation
 
 
 // depth of the tree at a given pendant node
-~find_level = { |node, envir|
-	~use_envir.(envir, {
+~find_level = { |node|
 		var parent = node, level = 0;
 		while {
 			parent.notNil
 		} {
-			parent = ~find_parentPendant.(parent, envir);
+			parent = ~find_parentPendant.(parent);
 			level = level + 1
 		};
 		level
-	})
 };
 
-~find_parentPendant = { |node, envir|
-	~use_envir.(envir, {
+~find_parentPendant = { |node|
 		var parentLink;
 		parentLink = ~all_links.select {|x| x[\value].value == node[\value] }[0];
 		parentLink !? {
 			~node_dict[parentLink[\value].key]
 		}
-	})
 };
 
 
@@ -168,21 +151,18 @@ Navigation
 // untested functions //
 
 
-~go_down = { |envir, name, func, depth = 0|
-	~use_envir.(envir, {
+~go_down = { |name, func, depth = 0|
 		var step, all = ~all_links.select { |x| x[\value].key == name };
 		func.value(name, depth);
 		step = if(all.size > 1) { 1 } { 0 };
 		all.do { |each|
 			var name = each[\value].value;
-			~go_down.(envir, name, func, depth + step)
+			~go_down.(name, func, depth + step)
 		};
-	})
 };
 
 
-~find_up = { |node, envir|
-	~useEnvir.(envir, {
+~find_up = { |node|
 		var links;
 		var key = node[\value];
 		if(node[\type] == \qnode) {
@@ -193,11 +173,9 @@ Navigation
 		} {
 			[~node_dict[node[\value].key]];
 		}
-	})
 };
 
-~find_down = { |node, envir|
-	~useEnvir.(envir, {
+~find_down = { |node|
 		var links, key = node[\value];
 		if(node[\type] == \qnode) {
 			links = ~all_links.select { |x| x[\value].key == key };
@@ -205,7 +183,6 @@ Navigation
 		} {
 			[~node_dict[x[\value].value]];
 		}
-	})
 };
 
 /*

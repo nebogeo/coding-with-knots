@@ -14,22 +14,27 @@ a lookup table for names of nodes:
 
 */
 
-// load library
-loadRelative("scquipu-lib.scd");
 
-// load data set
-~load_file.("../data/more/dot/UR004.xls.dot", ~data = ());
-~load_file.("../data/more/dot/HP019.xls.dot", ~data = ());
-~load_file.("../data/xl/UR019.xls.dot", ~data = ());
+// load the library
+(
+currentEnvironment = (); // make local
+loadRelative("scquipu-lib.scd");
+~data = currentEnvironment;
+)
+
+// load one of the following data sets:
+~load_file.("../data/more/dot/UR004.xls.dot");
+~load_file.("../data/more/dot/HP019.xls.dot");
+~load_file.("../data/xl/UR019.xls.dot");
 
 // astronomical quipu
-~load_file.("../data/xl/UR006.xls.dot", ~data = ());
-~load_file.("../data/xl/UR009.xls.dot", ~data = ());
+~load_file.("../data/xl/UR006.xls.dot");
+~load_file.("../data/xl/UR009.xls.dot");
 
 // variants of administrative quipus
-~load_file.("../data/xl/UR066.xls.dot", ~data = ());
-~load_file.("../data/xl/UR067.xls.dot", ~data = ());
-~load_file.("../data/xl/UR068.xls.dot", ~data = ());
+~load_file.("../data/xl/UR066.xls.dot");
+~load_file.("../data/xl/UR067.xls.dot");
+~load_file.("../data/xl/UR068.xls.dot");
 
 
 
