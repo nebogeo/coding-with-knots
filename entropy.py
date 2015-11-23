@@ -19,6 +19,13 @@ def entropy(hist,l):
         elist.append(-c * math.log(c ,2))
     return sum(elist)
 
-source = "222222222222222222122"
-(l,h) = hist(source);
-print 'Entropy:', entropy(h, l)
+def calc(source):
+    (l,h) = hist(source)
+    return entropy(h,l)
+
+def unit_test():
+    assert(calc("00000000000000000")==0)
+    assert(calc("zzzz")==0)
+    assert(calc("zzzzzzzzzzzzzzzzzzzzzzz")==0)
+
+unit_test()

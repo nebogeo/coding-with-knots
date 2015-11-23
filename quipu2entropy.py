@@ -17,7 +17,11 @@
 
 import sys
 import os
-import quipu
+import xlrd
+import entropy
+import operator
+from quipulib import *
+from quipu2dot import *
 
 # maximise 'native' entropy
 # todo: try filtering
@@ -50,11 +54,14 @@ def parse_to_raw(quipu):
         # describe the node details
         out+=pid+pendant_values;
         for i,knot in enumerate(knots):
-            out+=knot.values()
+            out+=str(knot.value)
+            out+=knot.type
+            out+=str(knot.position)
+            out+=knot.spin
 
     return out
 
-def calculate_entropy(filename):
+def calculate_entropy(filename,encode_fn):
     print filename
     # open the spreadsheet
     try:
@@ -64,6 +71,26 @@ def calculate_entropy(filename):
         print "problem"
         return False
 
-    with open(filename+'.dot', 'w') as f:
-        f.write(parse_to_raw(quipu))
-    return True
+    print(encode_fn(quipu))
+    return entropy.calc(encode_fn(quipu))
+
+def batch_generate_entropy(filenames):
+    cache = {}
+    for filename in filenames:
+        e = calculate_entropy(filename, parse_to_raw)
+        if e!=False:
+            cache[filename]=e
+
+    sorted_cache = sorted(cache.items(), key=operator.itemgetter(1))
+    for item in sorted_cache:
+        print(item)
+
+# are we the script that's being run?
+if __name__ == "__main__":
+    if sys.argv[1]=="test":
+        print entropy.calc(sys.argv[2])
+        exit(1)
+    if sys.argv[1]=="batch":
+        batch_generate_entropy(generate_quipu_list())
+    else:
+        print("entropy is: "+str(calculate_entropy(sys.argv[1], parse_to_raw)))

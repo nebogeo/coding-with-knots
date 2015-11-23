@@ -101,7 +101,9 @@ def batch_generate_dot(filenames):
         if run(filename):
             os.system("dot "+filename+".dot -Tpng > "+filename+".png")
 
-if sys.argv[1]=="batch":
-    batch_generate_dot(generate_quipu_list())
-else:
-    run(sys.argv[1])
+# are we the script that's being run?
+if __name__ == "__main__":
+    if sys.argv[1]=="batch":
+        batch_generate_dot(generate_quipu_list())
+    else:
+        run(sys.argv[1])
