@@ -7,7 +7,12 @@ A quipu has pendants and knots, some of which also have their own pendants branc
 */
 
 // load the library
+// load the library
+(
+currentEnvironment = (); // make local
 loadRelative("scquipu-lib.scd");
+~data = currentEnvironment;
+)
 
 
 /*
@@ -24,8 +29,8 @@ arguments:
 
 */
 
-~data = ();
-~load_file.("../data/xl/UR019.xls.dot", ~data);
+
+~load_file.("../data/xl/UR019.xls.dot");
 ~data
 ~data.keys // these are the fields generated
 

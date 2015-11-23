@@ -9,7 +9,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 ~all_nodes
 ~all_links
 ~node_dict // nodes are stored under their value
-
+~link_dict // links are stored under the node ids they link together
 
 */
 
@@ -53,7 +53,8 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 	"--- missing nodes: -----".postln;
 	~dangling_nodes.postln;
-};
+}.inEnvir; // the "inEnvir" message makes the scope ofthese functions local to the envir they are defined in
+
 
 ~convert_string = { |x|
 	var couldBeNumber, isColor;
@@ -87,7 +88,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	x !? {
 		x.split($,).collect { |x| ~convert_string.(x) }.unbubble;
 	}
-};
+}.inEnvir;
 
 ~parse_dotfile = { |x|
 	var i, j, attr = (), leftPart, rightPart;
@@ -114,7 +115,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 	} {
 		attr[\value] = ~unquote_string.(leftPart)
 	};
-};
+}.inEnvir;
 
 
 
@@ -136,7 +137,7 @@ Navigation
 			level = level + 1
 		};
 		level
-};
+}.inEnvir;
 
 ~find_parentPendant = { |node|
 		var parentLink;
@@ -144,7 +145,7 @@ Navigation
 		parentLink !? {
 			~node_dict[parentLink[\value].key]
 		}
-};
+}.inEnvir;
 
 
 
@@ -159,7 +160,7 @@ Navigation
 			var name = each[\value].value;
 			~go_down.(name, func, depth + step)
 		};
-};
+}.inEnvir;
 
 
 ~find_up = { |node|
@@ -173,7 +174,7 @@ Navigation
 		} {
 			[~node_dict[node[\value].key]];
 		}
-};
+}.inEnvir;
 
 ~find_down = { |node|
 		var links, key = node[\value];
@@ -183,7 +184,7 @@ Navigation
 		} {
 			[~node_dict[x[\value].value]];
 		}
-};
+}.inEnvir;
 
 /*
 
