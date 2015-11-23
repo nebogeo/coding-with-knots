@@ -13,7 +13,7 @@ This project is a side thread of the [weavingcodes](http://kairotic.org) project
 
 ##Usage
 
-Command line:
+###Generating dot files and PNGs
 
 Individual xls spreadsheet:
 
@@ -24,3 +24,16 @@ Batch mode, does convertion and runs dot (assumes location is data/xls):
 
     $ ./quipu2dot.py batch
 
+###Measuring entropy command line
+
+Single quipu:
+
+    $ ./quipu2entropy.py UR001.xls
+
+A test string:
+
+    $ ./quipu2entropy.py test AAABBB
+
+Batch mode, as above assumes location is data/xls - prints sorted list:
+
+    $ ./quipu2entropy.py batch
