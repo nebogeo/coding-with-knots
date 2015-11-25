@@ -14,7 +14,7 @@ SuperCollider functions for loading Quipu dotfile Datasets
 */
 
 
-~load_file = { |path|
+~load_file = { |path, onComplete|
 	var string, lines, body;
 	File.use(path.resolveRelative, "r", { |f| string = f.readAllString });
 	lines = string.split(Char.nl);
@@ -53,6 +53,9 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 	"--- missing nodes: -----".postln;
 	~dangling_nodes.postln;
+
+	onComplete.value;
+
 }.inEnvir; // the "inEnvir" message makes the scope ofthese functions local to the envir they are defined in
 
 
@@ -121,6 +124,21 @@ SuperCollider functions for loading Quipu dotfile Datasets
 
 /*
 
+Information Theory
+
+*/
+
+
+~entropy = { |list|
+	var histogram = list.as(Bag);
+	var contributions = histogram.contents.values / list.size;
+	contributions.sum { |c| neg(c) * log2(c) }
+};
+
+
+
+/*
+
 Navigation
 
 */
@@ -164,18 +182,21 @@ Navigation
 
 
 ~find_up = { |node|
-		var links;
-		var key = node[\value];
-		if(node[\type] == \qnode) {
-			links = ~all_links.select { |x|
-				x[\value].value == key;
-			};
-			links.collect { |x| ~node_dict[x] };
-		} {
-			[~node_dict[node[\value].key]];
-		}
+	var uplinks;
+	var key = node[\value];
+
+	if(node[\type] == \qlink) {
+		uplinks = [node]
+	} {
+		uplinks = ~all_links.select { |x|
+			x[\value].value == key;
+		};
+	};
+	uplinks.collect { |x| ~node_dict[x[\value].key] }.unbubble;
 }.inEnvir;
 
+
+// untested!
 ~find_down = { |node|
 		var links, key = node[\value];
 		if(node[\type] == \qnode) {

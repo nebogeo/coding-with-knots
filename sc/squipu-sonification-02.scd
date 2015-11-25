@@ -167,7 +167,7 @@ Tdef(\x, {
 		var color = x[\fillcolor], note, pan, len, ply;
 		var dur;
 		//x[\value].postln;
-		dur = durations[i] * 0.1;
+		dur = durations[i] ? 1 * 0.1;
 
 		if(color != nil) {
 			pan = pani[x[\pendant_attach]];

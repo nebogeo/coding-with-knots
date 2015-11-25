@@ -12,6 +12,11 @@ loadRelative("scquipu-lib.scd");
 ~load_file.("../data/more/dot/HP019.xls.dot");
 ~load_file.("../data/xl/UR019.xls.dot");
 
+
+// boring quipu
+~load_file.("../data/xl/UR046.xls.dot");
+
+
 // astronomical quipu
 ~load_file.("../data/xl/UR006.xls.dot");
 ~load_file.("../data/xl/UR009.xls.dot");
