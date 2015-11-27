@@ -2,7 +2,7 @@
 
 we have nodes and links:
 ~allNodes
-~data.all_links
+~allLinks
 
 
 nodes are of two types:
@@ -10,34 +10,26 @@ nodes are of two types:
 ~allKnots
 
 a lookup table for names of nodes:
-~data.node_dict
+~nodeDict
 
 */
 
-
-
-// load the library
-(
-currentEnvironment = (); // make local
+// load library
 loadRelative("scquipu-lib.scd");
-~data = currentEnvironment;
-)
 
-// load one of the following data sets:
-
-// quipu data
-~load_file.("../data/more/dot/UR004.xls.dot");
-~load_file.("../data/more/dot/HP019.xls.dot");
-~load_file.("../data/xl/UR019.xls.dot");
+// load data set
+~loadFile.("../data/more/dot/UR004.xls.dot");
+~loadFile.("../data/more/dot/HP019.xls.dot");
+~loadFile.("../data/xl/UR019.xls.dot");
 
 // astronomical quipu
-~load_file.("../data/xl/UR006.xls.dot");
-~load_file.("../data/xl/UR009.xls.dot");
+~loadFile.("../data/xl/UR006.xls.dot");
+~loadFile.("../data/xl/UR009.xls.dot");
 
 // variants of administrative quipus
-~load_file.("../data/xl/UR066.xls.dot");
-~load_file.("../data/xl/UR067.xls.dot");
-~load_file.("../data/xl/UR068.xls.dot");
+~loadFile.("../data/xl/UR066.xls.dot");
+~loadFile.("../data/xl/UR067.xls.dot");
+~loadFile.("../data/xl/UR068.xls.dot");
 
 
 (
@@ -52,23 +44,23 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 
 
 (
-~go_down = { |name, func, depth = 0|
-	var step, all = ~data.all_links.select { |x| x[\value].key == name };
+~goDown = { |name, func, depth = 0|
+	var step, all = ~allLinks.select { |x| x[\value].key == name };
 	func.value(name, depth);
 	step = if(all.size > 1) { 1 } { 0 };
 	all.do { |each|
 		var name = each[\value].value;
-		~go_down.(name, func, depth + step)
+		~goDown.(name, func, depth + step)
 	};
 };
 )
 
 
-~data.node_dict.keys.do { |x| ~go_down.(x, _.postln) };
+~nodeDict.keys.do { |x| ~goDown.(x, _.postln) };
 
-~go_down.(\primary, { |x| x.postln })
+~goDown.(\primary, { |x| x.postln })
 
-~data.node_dict.keys.choose;
+~nodeDict.keys.choose;
 
 
 
@@ -78,9 +70,9 @@ SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
 
 (
 Tdef(\x, {
-	~go_down.(\primary, { |name, depth|
+	~goDown.(\primary, { |name, depth|
 		var node, pos, note, dur;
-		node = ~data.node_dict[name];
+		node = ~nodeDict[name];
 		if(node.notNil) {
 			dur = ((2/3 ** depth.postln) * 0.24);
 			//dur = 0.1 + 0.01.rand2;
@@ -101,9 +93,9 @@ Tdef(\x, {
 // quipu calculus: knot value
 (
 Tdef(\x, {
-	~go_down.(\primary, { |name, depth|
+	~goDown.(\primary, { |name, depth|
 		var node, pos, note, dur;
-		node = ~data.node_dict[name];
+		node = ~nodeDict[name];
 		if(node.notNil) {
 			dur = ((0.5 ** depth) * 0.2);
 			//dur = 0.1;
@@ -121,9 +113,9 @@ Tdef(\x, {
 // play knots on the same pendant in parallel: knot position
 (
 Tdef(\x, {
-	~go_down.(\primary, { |name, depth|
+	~goDown.(\primary, { |name, depth|
 		var node, pos, note, dur;
-		node = ~data.node_dict[name];
+		node = ~nodeDict[name];
 		if(node.notNil) {
 			dur = ((2/3 ** depth) * 0.2);
 			//dur = 0.1;
@@ -143,12 +135,12 @@ Tdef(\x, {
 
 /*
 (
-~data.all_links.do { |x| x[\knots] = nil };
-~data.all_links.do { |x|
+~allLinks.do { |x| x[\knots] = nil };
+~allLinks.do { |x|
 	var from = x[\value].key;
 	var to = x[\value].value;
-	var nodeFrom = ~data.node_dict[from];
-	var nodeTo = ~data.node_dict[to];
+	var nodeFrom = ~nodeDict[from];
+	var nodeTo = ~nodeDict[to];
 
 	if(nodeFrom.notNil and: { nodeTo.notNil }) {
 		if(nodeTo[\qtype] == \knot_node) {
