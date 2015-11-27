@@ -63,11 +63,42 @@ class pendant:
             return False
 
     def pprint(self,depth):
+        out=""
         header=""
+        pheader=""
+        for i in range(0,depth-1): pheader+=" "
         for i in range(0,depth): header+=" "
-        print(header+self.pid)
-        for p in self.children:
-            p.pprint(depth+2)
+        out+=pheader+"{ \n"
+        out+=header+"\"id\": \""+self.pid+"\", \"ply\": \""+self.ply+"\", \"attach\": \""+self.attach+"\", \n"
+        cc = ""
+        for i,c in enumerate(self.colours):
+              cc+="["+str(c[0])+", "+str(c[1])+", "+str(c[2])+"]"
+              if i!=len(self.colours)-1: cc+=", "
+
+        out+=header+"\"colours\": ["+cc+"],\n"
+
+        if (len(self.knots)==0):
+            out+=header+"\"knots\": [],"
+        else:
+            out+=header+"\"knots\": [\n"
+            for i,k in enumerate(self.knots):
+                out+=header+"{ \"value\": "+str(k.value)+", \"type\": \""+k.type+"\", \"position\": "+str(k.position)+", \"spin\": \""+k.spin+"\" }"
+                if i==len(self.knots)-1: out+="\n"
+                else: out+=",\n"
+            out+=header+"],\n"
+
+        if (len(self.children)==0):
+            out+=header+"\"children\": []\n"
+        else:
+            out+=header+"\"children\": [\n"
+            for i,p in enumerate(self.children):
+                out+=p.pprint(depth+2)
+                if i==len(self.children)-1: out+="\n"
+                else: out+=",\n"
+
+            out+=header+"]\n"
+        out+=pheader+"}"
+        return out
 
     def num_pendants(self):
         count = 1
@@ -217,7 +248,11 @@ def run(filename):
         return False
 
     primary = parse_to_pendant_tree(quipu)
-    #primary.pprint(0)
+
+    #f = open(filename+".json","w")
+    #f.write(primary.pprint(0))
+    #f.close()
+
     return render(primary,filename)
 
 def batch_run(filenames):
