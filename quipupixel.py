@@ -24,16 +24,26 @@ import sys
 import os
 import xlrd
 from quipulib import *
+import entropy
 
 _NUMERALS = '0123456789abcdefABCDEF'
 _HEXDEC = {v: int(v, 16) for v in (x+y for x in _NUMERALS for y in _NUMERALS)}
 
+_max_entropy = 0
+_min_entropy = 999
+
+max_height = 80
+
+def reset_entropy():
+    global _max_entropy
+    global _min_entropy
+    _max_entropy = 0
+    _min_entropy = 999
+
+
 def rgb(triplet):
     return _HEXDEC[triplet[0:2]], _HEXDEC[triplet[2:4]], _HEXDEC[triplet[4:6]]
 
-def safe_plot(pixels,x,y,c):
-    if x>0 and x<pixels.shape[1] and y>0 and y<pixels.shape[0]:
-        pixels[y,x]=c
 
 
 class pendant:
@@ -45,11 +55,13 @@ class pendant:
         self.knots = knots
         if length=="": self.length=0
         else: self.length = float(length)
+        if self.length==0: self.length=5; # default
         self.colours = []
         for c in colours:
             # convert to triples
             self.colours.append(rgb(c[2:-1]))
         self.value = value
+        self.entropy = 0
 
     def add(self,child):
         self.children.append(child)
@@ -61,6 +73,26 @@ class pendant:
                 f = p.find(pid)
                 if f: return f
             return False
+
+    def calc_entropy(self):
+        self.entropy = entropy.calc(self.pprint(0))
+        global _min_entropy
+        global _max_entropy
+
+        if self.entropy<_min_entropy: _min_entropy=self.entropy
+        if self.entropy>_max_entropy: _max_entropy=self.entropy
+
+        for p in self.children:
+            p.calc_entropy()
+
+    def safe_plot(self,pixels,x,y,c):
+        if x>0 and x<pixels.shape[1] and y>0 and y<pixels.shape[0]:
+            if self.entropy!=0:
+                v=(self.entropy-_min_entropy)/(_max_entropy-_min_entropy)
+                v*=255
+                pixels[y,x]=(v,v,v)
+            else:
+                pixels[y,x]=c
 
     def pprint(self,depth):
         out=""
@@ -115,7 +147,7 @@ class pendant:
 
     def render_data(self,pixels,x,y):
         for i in range(0,int(self.length)):
-            safe_plot(pixels,x,y+i,self.colours[i%len(self.colours)])
+            self.safe_plot(pixels,x,y+i,self.colours[i%len(self.colours)])
 
         kcol = self.colours[0]
         for k in self.knots:
@@ -125,7 +157,7 @@ class pendant:
             if k.type=="S": c = (v,0,0)
             if k.type=="L": c = (0,v,0)
             if k.type=="E": c = (0,0,v)
-            safe_plot(pixels,x+1,y+i,c)
+            self.safe_plot(pixels,x+1,y+i,c)
 
     def render(self,pixels,sx,x,y):
         self.render_data(pixels,x,y)
@@ -133,7 +165,7 @@ class pendant:
         tx = sx
         for p in self.children:
             for i in range(tx,x+3):
-                safe_plot(pixels,i,y+3,p.colours[i%len(p.colours)])
+                self.safe_plot(pixels,i,y+3,p.colours[i%len(p.colours)])
             x+=3
             tx+=3
             tx,x=p.render(pixels,tx,x,y+3)
@@ -143,11 +175,13 @@ class pendant:
 def prerender(primary,filename,store):
     h = int(primary.longest_pendant(0))+10
     w = primary.num_pendants()*3
+    h = min(h,max_height)
     store[filename] = [0,0,w,h]
 
 
 def render(primary,filename):
     h = int(primary.longest_pendant(0))+10;
+    h = min(h,max_height)
     im = Image.new("RGB", (primary.num_pendants()*3,h), "black")
 
     pixels=np.array(im)
@@ -161,7 +195,7 @@ def render(primary,filename):
     qname = os.path.basename(filename)[:-4]
     d_usr = d_usr.text((0,h-10),qname,(100,100,100))
 
-    #image.save("pixel/"+qname+".png")
+    image.save("pixel/"+qname+".png")
     return image
 
 
@@ -202,7 +236,7 @@ def parse_to_pendant_tree(quipu):
 
 def find_row(rows,w,maxw):
     for i,r in enumerate(rows):
-        if (r+w)<maxw:
+        if (r+w+20)<maxw:
             rows[i]+=w+20
             return i
     rows.append(0)
@@ -220,9 +254,9 @@ def fit(store):
     for r in store.values():
         row = find_row(rows,r[2],widest)
         r[0]=rows[row]-r[2]
-        r[1]=row*80
+        r[1]=row*max_height
 
-    return (widest,len(rows)*80)
+    return (widest,len(rows)*max_height)
 
 # create the dotfile
 def prerun(filename,store):
@@ -234,6 +268,7 @@ def prerun(filename,store):
         print "problem"
         return False
     primary = parse_to_pendant_tree(quipu)
+    #primary.calc_entropy()
     prerender(primary,filename,store)
     return store
 
@@ -248,7 +283,8 @@ def run(filename):
         return False
 
     primary = parse_to_pendant_tree(quipu)
-
+    #reset_entropy()
+    #primary.calc_entropy()
     #f = open(filename+".json","w")
     #f.write(primary.pprint(0))
     #f.close()
