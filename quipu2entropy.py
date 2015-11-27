@@ -50,9 +50,10 @@ def parse_to_raw(quipu):
             else:
                 clist+=":"+c[1:-1]
 
-        pendant_values = clist+ply+attach+length
+        pendant_values = clist+ply+attach+length+clist
         # describe the node details
         out+=pid+pendant_values;
+
         for i,knot in enumerate(knots):
             out+=str(knot.value)
             out+=knot.type

@@ -146,7 +146,7 @@ def parse_one_colour(s):
             else:
                 print("don't know this colour: ["+s+"]")
                 unknown_colours[s]=1
-        return '"#000000"'
+        return '"#777777"'
 
 # we don't differenciate between colour effects yet :(
 def parse_colour(s):
@@ -177,7 +177,7 @@ def unit_test():
     assert(ks[0].position==5.0)
     assert(ks[0].spin=="Z")
     assert(len(parse_knots(""))==0)
-    assert(parse_colour("foo")==['"#000000"'])
+    #assert(parse_colour("foo")==['"#000000"'])
     assert(parse_colour("MB")==['"#673923"'])
     assert(parse_colour("MB:MG")==['"#673923"','"#817066"'])
 
