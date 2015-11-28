@@ -25,6 +25,7 @@ import os
 import xlrd
 from quipulib import *
 import entropy
+import operator
 
 _NUMERALS = '0123456789abcdefABCDEF'
 _HEXDEC = {v: int(v, 16) for v in (x+y for x in _NUMERALS for y in _NUMERALS)}
@@ -44,6 +45,17 @@ def reset_entropy():
 def rgb(triplet):
     return _HEXDEC[triplet[0:2]], _HEXDEC[triplet[2:4]], _HEXDEC[triplet[4:6]]
 
+def empty_collect():
+    return {
+        "ply":[],
+        "attach":[],
+        "length":[],
+        "colours":[],
+        "knot_value":[],
+        "knot_type":[],
+        "knot_position":[],
+        "knot_spin":[]
+    }
 
 ## pendant tree class
 class pendant:
@@ -75,24 +87,12 @@ class pendant:
             return False
 
     def calc_entropy(self):
-        collect={
-            "ply":[],
-            "attach":[],
-            "length":[],
-            "colours":[],
-            "knot_value":[],
-            "knot_type":[],
-            "knot_position":[],
-            "knot_spin":[]
-        }
-
+        collect=empty_collect()
         self.as_raw(collect)
 
         self.entropy=0
         for i in collect.values():
             self.entropy += entropy.calc(i)
-
-        print(self.entropy)
 
         global _min_entropy
         global _max_entropy
@@ -349,6 +349,68 @@ def global_entropy_sliced(filenames):
     for key,value in collect.items():
         print(key+" "+str(entropy.calc(value)))
 
+# calculate separate entropy values for each type of data
+def global_entropy_comp(filenames):
+    cache = {}
+
+    for filename in filenames:
+        # open the spreadsheet
+        try:
+            workbook = xlrd.open_workbook(filename)
+            quipu = workbook.sheet_by_name('Pendant Detail')
+            primary = parse_to_pendant_tree(quipu)
+            primary.calc_entropy()
+            cache[filename]=primary.entropy
+        except Exception:
+            pass
+    sorted_cache = sorted(cache.items(), key=operator.itemgetter(1))
+    for item in sorted_cache:
+        print(item)
+
+    plt.rc('xtick', labelsize=6)
+
+    ind = np.arange(len(sorted_cache))  # the x locations for the groups
+    label_ind = np.arange(len(sorted_cache)/2)*2  # the x locations for the groups
+    fig,ax = plt.subplots()
+    rects = ax.plot(ind, map(lambda i: i[1], sorted_cache))
+    ax.set_ylabel('entropy bits')
+    ax.set_title('entropy per quipu (all data)')
+    ax.set_xticks(label_ind)
+
+    labels = []
+    for i,v in enumerate(sorted_cache):
+        if i%2==0: labels.append(os.path.basename(v[0])[:-4])
+
+    ax.set_xticklabels(labels, rotation="vertical")
+    plt.show()
+
+# calculate separate entropy values for each type of data
+def pairwise_entropy_comp(filenames):
+    x = []
+    y = []
+    l = []
+    for filename in filenames:
+        # open the spreadsheet
+        try:
+            workbook = xlrd.open_workbook(filename)
+            quipu = workbook.sheet_by_name('Pendant Detail')
+        except Exception:
+            continue
+        primary = parse_to_pendant_tree(quipu)
+        collect = empty_collect()
+        primary.as_raw(collect)
+        x+=[entropy.calc(collect["ply"])]
+        y+=[entropy.calc(collect["knot_value"])]
+        l+=[os.path.basename(filename)[:-4]]
+
+    plt.xlabel('pendant ply entropy (bits)')
+    plt.ylabel('knot value entropy (bits)')
+
+    plt.scatter(x, y)
+    for i, txt in enumerate(l):
+        plt.annotate(txt, (x[i],y[i]), fontsize=6)
+    plt.show()
+
 # run over all quipus and paste them in the big image
 def batch_run(filenames):
     store = {}
@@ -372,5 +434,9 @@ if __name__ == "__main__":
         batch_run(generate_quipu_list())
     if sys.argv[1]=="sliced_entropy":
         global_entropy_sliced(generate_quipu_list())
+    if sys.argv[1]=="global_entropy":
+        global_entropy_comp(generate_quipu_list())
+    if sys.argv[1]=="pairwise_entropy":
+        pairwise_entropy_comp(generate_quipu_list())
     else:
         run(sys.argv[1])
