@@ -26,7 +26,7 @@ from quipu2dot import *
 # maximise 'native' entropy
 # todo: try filtering
 def parse_to_raw(quipu):
-    out = ""
+    out = []
     # skip the gumpf at the top, start on the 6th line
     for curr_row in range(6,quipu.nrows):
         # get the stuff from the row
@@ -52,7 +52,7 @@ def parse_to_raw(quipu):
 
         pendant_values = clist+ply+attach+length+clist
         # describe the node details
-        out+=pid+pendant_values;
+        out=pid+pendant_values;
 
         for i,knot in enumerate(knots):
             out+=str(knot.value)

@@ -128,7 +128,9 @@ colour_lookup = {
     'VR' : "#4F0014",
     'FB' : "#140F0B",
     'LC' : "#2C3337",
-    'VB' : "#022027"
+    'VB' : "#022027",
+    'LA' : "#BEADA1",
+    'GY' : "#887359"
 }
 
 unknown_colours = {}

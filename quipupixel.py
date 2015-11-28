@@ -45,7 +45,7 @@ def rgb(triplet):
     return _HEXDEC[triplet[0:2]], _HEXDEC[triplet[2:4]], _HEXDEC[triplet[4:6]]
 
 
-
+## pendant tree class
 class pendant:
     def __init__(self,pid,ply,attach,knots,length,colours,value):
         self.pid = pid
@@ -61,7 +61,7 @@ class pendant:
             # convert to triples
             self.colours.append(rgb(c[2:-1]))
         self.value = value
-        self.entropy = 0
+        self.entropy = -1
 
     def add(self,child):
         self.children.append(child)
@@ -75,7 +75,25 @@ class pendant:
             return False
 
     def calc_entropy(self):
-        self.entropy = entropy.calc(self.pprint(0))
+        collect={
+            "ply":[],
+            "attach":[],
+            "length":[],
+            "colours":[],
+            "knot_value":[],
+            "knot_type":[],
+            "knot_position":[],
+            "knot_spin":[]
+        }
+
+        self.as_raw(collect)
+
+        self.entropy=0
+        for i in collect.values():
+            self.entropy += entropy.calc(i)
+
+        print(self.entropy)
+
         global _min_entropy
         global _max_entropy
 
@@ -87,14 +105,28 @@ class pendant:
 
     def safe_plot(self,pixels,x,y,c):
         if x>0 and x<pixels.shape[1] and y>0 and y<pixels.shape[0]:
-            if self.entropy!=0:
+            if self.entropy!=-1:
                 v=(self.entropy-_min_entropy)/(_max_entropy-_min_entropy)
                 v*=255
                 pixels[y,x]=(v,v,v)
             else:
                 pixels[y,x]=c
 
-    def pprint(self,depth):
+    # slice the data for entropy calc
+    def as_raw(self, collect):
+        collect["ply"]+=[self.ply]
+        collect["attach"]+=[self.attach]
+        collect["length"]+=[self.length]
+        collect["colours"]+=self.colours
+        collect["knot_value"]+=map(lambda k: k.value, self.knots)
+        collect["knot_type"]+=map(lambda k: k.type, self.knots)
+        collect["knot_position"]+=map(lambda k: k.position, self.knots)
+        collect["knot_spin"]+=map(lambda k: k.spin, self.knots)
+        for c in self.children:
+            c.as_raw(collect)
+
+    # produce a json string of this pendant
+    def as_json(self,depth):
         out=""
         header=""
         pheader=""
@@ -124,7 +156,7 @@ class pendant:
         else:
             out+=header+"\"children\": [\n"
             for i,p in enumerate(self.children):
-                out+=p.pprint(depth+2)
+                out+=p.as_json(depth+2)
                 if i==len(self.children)-1: out+="\n"
                 else: out+=",\n"
 
@@ -139,7 +171,7 @@ class pendant:
         return count
 
     def longest_pendant(self,depth):
-        length = self.length+depth*3
+        length = self.length+depth*3 # account for heirarchical position
         for p in self.children:
             l = p.longest_pendant(depth+1)
             if l>length: length=l
@@ -171,14 +203,16 @@ class pendant:
             tx,x=p.render(pixels,tx,x,y+3)
         return (sx,x)
 
+########################################################
 
+# just store the width and height for box fitting
 def prerender(primary,filename,store):
     h = int(primary.longest_pendant(0))+10
     w = primary.num_pendants()*3
     h = min(h,max_height)
     store[filename] = [0,0,w,h]
 
-
+# render a quipu, save the image and return it
 def render(primary,filename):
     h = int(primary.longest_pendant(0))+10;
     h = min(h,max_height)
@@ -195,6 +229,7 @@ def render(primary,filename):
     qname = os.path.basename(filename)[:-4]
     d_usr = d_usr.text((0,h-10),qname,(100,100,100))
 
+    print("saving: pixel/"+qname+".png")
     image.save("pixel/"+qname+".png")
     return image
 
@@ -234,6 +269,9 @@ def parse_to_pendant_tree(quipu):
 
     return primary
 
+# box fitting algo for the big image - store in rows, and
+# look for rows with enough space in, make new rows where
+# required
 def find_row(rows,w,maxw):
     for i,r in enumerate(rows):
         if (r+w+20)<maxw:
@@ -243,22 +281,16 @@ def find_row(rows,w,maxw):
     return len(rows)-1
 
 def fit(store):
-    # find widest
-    widest = 0
-    for r in store.values():
-        if r[2]>widest:
-            widest = r[2]
-    widest=2000
-    print widest
+    widest=2000 # max width of a row
     rows = [0]
     for r in store.values():
         row = find_row(rows,r[2],widest)
-        r[0]=rows[row]-r[2]
+        r[0]=rows[row]-r[2] # store the position
         r[1]=row*max_height
 
     return (widest,len(rows)*max_height)
 
-# create the dotfile
+# create the box fit coordinates using width/heights
 def prerun(filename,store):
     # open the spreadsheet
     try:
@@ -272,7 +304,7 @@ def prerun(filename,store):
     prerender(primary,filename,store)
     return store
 
-
+# actually create the image
 def run(filename):
     # open the spreadsheet
     try:
@@ -286,11 +318,38 @@ def run(filename):
     #reset_entropy()
     #primary.calc_entropy()
     #f = open(filename+".json","w")
-    #f.write(primary.pprint(0))
+    #f.write(primary.as_json(0))
     #f.close()
 
     return render(primary,filename)
 
+# calculate separate entropy values for each type of data
+def global_entropy_sliced(filenames):
+    collect={
+        "ply":[],
+        "attach":[],
+        "length":[],
+        "colours":[],
+        "knot_value":[],
+        "knot_type":[],
+        "knot_position":[],
+        "knot_spin":[]
+    }
+
+    for filename in filenames:
+        # open the spreadsheet
+        try:
+            workbook = xlrd.open_workbook(filename)
+            quipu = workbook.sheet_by_name('Pendant Detail')
+            primary = parse_to_pendant_tree(quipu)
+            primary.as_raw(collect)
+        except Exception:
+            pass
+
+    for key,value in collect.items():
+        print(key+" "+str(entropy.calc(value)))
+
+# run over all quipus and paste them in the big image
 def batch_run(filenames):
     store = {}
     for filename in filenames:
@@ -311,5 +370,7 @@ def batch_run(filenames):
 if __name__ == "__main__":
     if sys.argv[1]=="batch":
         batch_run(generate_quipu_list())
+    if sys.argv[1]=="sliced_entropy":
+        global_entropy_sliced(generate_quipu_list())
     else:
         run(sys.argv[1])
