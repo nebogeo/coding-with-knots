@@ -107,7 +107,8 @@ class pendant:
         if x>0 and x<pixels.shape[1] and y>0 and y<pixels.shape[0]:
             if self.entropy!=-1:
                 v=(self.entropy-_min_entropy)/(_max_entropy-_min_entropy)
-                v*=255
+                v*=225
+                v+=25
                 pixels[y,x]=(v,v,v)
             else:
                 pixels[y,x]=c
@@ -116,11 +117,11 @@ class pendant:
     def as_raw(self, collect):
         collect["ply"]+=[self.ply]
         collect["attach"]+=[self.attach]
-        collect["length"]+=[self.length]
+        #collect["length"]+=[self.length]
         collect["colours"]+=self.colours
         collect["knot_value"]+=map(lambda k: k.value, self.knots)
         collect["knot_type"]+=map(lambda k: k.type, self.knots)
-        collect["knot_position"]+=map(lambda k: k.position, self.knots)
+        #collect["knot_position"]+=map(lambda k: k.position, self.knots)
         collect["knot_spin"]+=map(lambda k: k.spin, self.knots)
         for c in self.children:
             c.as_raw(collect)
@@ -315,8 +316,8 @@ def run(filename):
         return False
 
     primary = parse_to_pendant_tree(quipu)
-    #reset_entropy()
-    #primary.calc_entropy()
+#    reset_entropy()
+#    primary.calc_entropy()
     #f = open(filename+".json","w")
     #f.write(primary.as_json(0))
     #f.close()
@@ -400,11 +401,11 @@ def pairwise_entropy_comp(filenames):
         collect = empty_collect()
         primary.as_raw(collect)
         x+=[entropy.calc(collect["ply"])]
-        y+=[entropy.calc(collect["knot_value"])]
+        y+=[entropy.calc(collect["knot_type"])]
         l+=[os.path.basename(filename)[:-4]]
 
     plt.xlabel('pendant ply entropy (bits)')
-    plt.ylabel('knot value entropy (bits)')
+    plt.ylabel('knot type entropy (bits)')
 
     plt.scatter(x, y)
     for i, txt in enumerate(l):

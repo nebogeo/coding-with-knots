@@ -39,6 +39,7 @@ loadRelative("scquipu-lib.scd");
 ~load_file.("../data/xl/UR067.xls.dot");
 ~load_file.("../data/xl/UR068.xls.dot");
 
+~load_file.("../data/xl/UR139.xls.dot");
 
 (
 SynthDef(\sin, { |out, freq = 440, sustain = 1, pan, amp = 0.1, ply|
@@ -160,3 +161,51 @@ Tdef(\x, {
 )
 
 */
+
+Server.default.makeGui
+~load_file.("../data/xls/UR113.xls.dot");
+
+// quipu soup: knot value and pendant colour
+(
+
+Tdef(\x, {
+	var pani = ('R':-1, 'V':1, 'U':0);
+	var plyi = ('S': 0, 'Z': 1, 'U': 0.5);
+	~go_down.(\primary, { |name, depth|
+		var node, pos, note, dur, color, attach, pan, len, ply;
+		node = ~data.node_dict[name];
+
+		if(node.notNil) {
+			dur = ((0.5 ** depth) * 0.2);
+			//dur = 0.1;
+
+			color = node[\fillcolor];
+			attach = node[\pendant_attach];
+			if(attach.notNil) {
+				// we are a pendant
+				pan = pani[node[\pendant_attach]];
+				ply = plyi[node[\pendant_ply]];
+				len = node[\pendant_length] ? 25 / 25;
+				note =  [color.red, color.green, color.blue] * 12 + 12;
+				(
+					note: note,
+					dur: len * 0.2, // play longer than knots
+					instrument: \sin,
+					amp: 0.1/3,
+					pan: pan,
+					legato:len * 1.5,
+					ply: ply
+				).play;
+			} {
+				// we are a knot
+				pos = node[\knot_position];
+				if(pos.notNil) {
+					note =  node[\knot_value] * 6;
+					(note:note, sustain: dur, instrument: \sin).play;
+				};
+			};
+			dur.wait;
+		}
+	})
+}).play
+)
