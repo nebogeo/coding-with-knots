@@ -42,6 +42,9 @@ we need the json files first, so the below doesn't work yet.
 )
 
 ~all_pendants.(~data).collect { |x| x[\ply] };
+~all_pendants.(~data).collect { |x| x[\knot_position] }; // nil ...
+~all_pendants.(~data).collect { |x| x.class }.as(Set) // IdentityDictionary
+
 
 
 (
@@ -49,7 +52,10 @@ we need the json files first, so the below doesn't work yet.
 	var all = ~all_pendants.(~data);
 	var t = { |f| try(f, { "could not get one of the parameters: % ".format(parameter).warn }) };
 	parameter.asArray.collect {|p|
-		[all.minItem { |x| f.(x[p]) ? inf }[p], all.maxItem { |x| f.(x[p]) ? - inf }[p]] ;
+		[
+			all.minItem { |x| f.(x[p]) ? inf }[p],
+			all.maxItem { |x| f.(x[p]) ? -inf }[p]
+		]
 	}.unbubble
 };
 ~all_values_of = { |parameter|
@@ -63,10 +69,7 @@ we need the json files first, so the below doesn't work yet.
 ~all_pendants.(~data).collect { |x| x.keys }.reduce { |a, b| union(a, b) } // ply, attach, children, colours, knots, id
 
 ~range_of.(\attach);
-~range_of.(\colours);
-
 ~range_of.(\knot_position);
-~all_values_of.(\knot_position);
 
 
 // some statistics
