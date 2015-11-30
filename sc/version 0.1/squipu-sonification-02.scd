@@ -132,7 +132,7 @@ Tdef(\x, {
 				instrument: \sin,
 				amp: 0.1,
 				pan: pan,
-				legato:len * 1.5,
+				legato:len + 0.01 * 1.5,
 				ply: ply
 			).play;
 		};
