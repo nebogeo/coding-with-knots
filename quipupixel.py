@@ -318,9 +318,6 @@ def run(filename):
     primary = parse_to_pendant_tree(quipu)
 #    reset_entropy()
 #    primary.calc_entropy()
-    #f = open(filename+".json","w")
-    #f.write(primary.as_json(0))
-    #f.close()
 
     return render(primary,filename)
 
@@ -429,6 +426,20 @@ def batch_run(filenames):
     print(len(store))
     im.save("comp.png")
 
+# calculate separate entropy values for each type of data
+def json_save(filenames):
+    for filename in filenames:
+        # open the spreadsheet
+        try:
+            workbook = xlrd.open_workbook(filename)
+            quipu = workbook.sheet_by_name('Pendant Detail')
+            primary = parse_to_pendant_tree(quipu)
+            f = open("json/"+os.path.basename(filename)[:-4]+".json","w")
+            f.write(primary.as_json(0))
+            f.close()
+        except Exception:
+            continue
+
 # are we the script that's being run?
 if __name__ == "__main__":
     if sys.argv[1]=="batch":
@@ -439,5 +450,7 @@ if __name__ == "__main__":
         global_entropy_comp(generate_quipu_list())
     if sys.argv[1]=="pairwise_entropy":
         pairwise_entropy_comp(generate_quipu_list())
+    if sys.argv[1]=="json":
+        json_save(generate_quipu_list())
     else:
         run(sys.argv[1])
