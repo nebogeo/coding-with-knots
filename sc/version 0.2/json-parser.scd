@@ -44,5 +44,21 @@
 ~getQuipuData = ~parseDicts <>~readYaml
 );
 
-x = ~getQuipuData.("UR007.xls.json".resolveRelative);
-x.cs
+
+
+
+~data = ~getQuipuData.("UR007.xls.json".resolveRelative);
+~data.cs; // post compile string
+
+(
+~traverse = { |dict, func|
+	dict[\children].do { |each| ~traverse.(each, func) };
+	func.value(dict);
+}
+);
+
+
+~traverse.(~data, { |x| x[\colours].postln });
+~traverse.(~data, { |x| x[\knots].postln });
+
+
