@@ -47,7 +47,7 @@
 
 
 
-~data = ~getQuipuData.("UR007.xls.json".resolveRelative);
+~data = ~getQuipuData.("../../json/HP001.json".resolveRelative);
 ~data.cs; // post compile string
 
 (
