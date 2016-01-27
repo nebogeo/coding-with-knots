@@ -4,6 +4,7 @@ Sonifications using the json format
 
 */
 
+loadRelative("scquipu-lib.scd");
 
 
 // load one of the following data sets:
@@ -44,14 +45,23 @@ SynthDef(\gabor, { |out, freq = 440, sustain = 1, pan, amp = 0.1|
 }).add;
 )
 
+// depth first
 (
 ~traverse = { |dict, func, level = 0, index = 0|
-	dict[\children].do { |each, i| ~traverse.(each, func, level + 1, i) };
 	func.value(dict, level, index);
+	dict[\children].do { |each, i| ~traverse.(each, func, level + 1, i) };
 };
 );
 
 ~traverse.(~data, { |x| x[\colours].postln }); // test
+
+
+
+
+
+
+// SONIFICATIONS
+
 
 // inka telefax: traversal
 (
