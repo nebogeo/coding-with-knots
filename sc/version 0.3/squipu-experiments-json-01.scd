@@ -48,7 +48,7 @@ SynthDef(\gabor, { |out, freq = 440, sustain = 1, pan, amp = 0.1|
 ~traverse = { |dict, func, level = 0, index = 0|
 	dict[\children].do { |each, i| ~traverse.(each, func, level + 1, i) };
 	func.value(dict, level, index);
-}
+};
 );
 
 ~traverse.(~data, { |x| x[\colours].postln }); // test
@@ -57,12 +57,115 @@ SynthDef(\gabor, { |out, freq = 440, sustain = 1, pan, amp = 0.1|
 (
 Tdef(\x, {
 	~traverse.(~data, { |x|
-		var colours = x[\colours], note;
-		colours.do { |colour|
-			note =  [colour.red, colour.green, colour.blue] * 32;
+		var note = x[\colours] / 255 * 32;
+		if(note.notEmpty) {
 			(note:note, sustain: 0.1, instrument: \sin).play;
 		};
 		0.1.wait;
 	})
 }).play
 )
+
+
+
+(
+Tdef(\x, {
+	var pani = ('R':-1, 'V':1, 'U':0);
+	var plyi = ('S': 0, 'Z': 1, 'U': 0.5);
+	~traverse.(~data, { |x, level|
+		var colours = x[\colours], note, pan, len, ply;
+		var dur;
+		//x[\value].postln;
+		dur = 1/2 ** (level - 1);
+		dur = (dur / 10);
+		dur.wait;
+		if(colours.notEmpty) {
+			pan = pani[x[\pendant_attach]];
+			ply = plyi[x[\pendant_ply]];
+			len = x[\pendant_length] ? 25 / 25;
+			note = x[\colours] / 255 * 36 + 12;
+			(
+				note:note,
+				dur: dur,
+				instrument: \sin,
+				amp: 0.1/3,
+				pan: pan,
+				legato:len * 1.5,
+				ply: ply
+			).play;
+		};
+
+	})
+}).play
+)
+
+
+// KNOTS
+
+
+(
+Tdef(\x, {
+	~traverse.(~data, { |x, level|
+		var knots = x[\knots];
+		knots.do { |k|
+			var note, pan;
+			note = k[\value];
+			pan = k[\spin];
+			(note:note, harmonic: k[\position], sustain: 0.01, instrument: \sin, sustain: 0.4, pan: pan).play;
+		};
+		0.1.wait;
+	})
+}).play
+)
+
+
+
+// multichannel version
+(
+Tdef(\x, {
+	~traverse.(~data, { |x, level|
+		var knots = x[\knots];
+		knots.do { |k|
+			var note, pan;
+			note = k[\value];
+			pan = k[\spin];
+			(note:note, out: k[\position] - 6, sustain: 0.01, instrument: \sin, sustain: 0.4, pan: pan).play;
+		};
+		0.1.wait;
+	})
+}).play
+)
+
+
+
+
+(
+Tdef(\x, {
+	var dict = (
+		'S': (note: 0, sustain: 0.01, instrument: \sin, sustain: 0.04),
+		'Z': (note: 6, sustain: 0.01, instrument: \sin, sustain: 0.04),
+		'U': (note: 23, sustain: 0.01, instrument: \sin, sustain: 0.04)
+	);
+	~traverse.(~data, { |x, level|
+		var knots = x[\knots];
+		knots.do { |k|
+			var event, spin;
+			spin = k[\spin];
+			event = dict[spin];
+			event = event ?? { (note: -5, sustain: 0.01, instrument: \sin, sustain: 0.04) };
+			event.play;
+			0.1.wait;
+			//event[\dur].wait;
+		};
+		0.2.wait;
+	});
+}).play
+)
+
+
+
+
+
+
+
+

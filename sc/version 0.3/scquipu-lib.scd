@@ -37,7 +37,8 @@ It has possibly an array of "knots", which contains more entries.
 		switch(key,
 
 			\colours, {
-				val = val.collect { |triple| Color.new255(*triple.collect(_.asInteger)) }
+				val.postcs;
+				val = val.collect { |triple| triple.collect(_.asInteger) } // convert to 0..1 range
 			},
 
 			\children, {

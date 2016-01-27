@@ -14,7 +14,7 @@
 );
 
 
-~traverse.(~data, { |x| x[\colours].postln });
+~traverse.(~data, { |x| x[\colours].postcs });
 ~traverse.(~data, { |x| x[\knots].postln });
 
 
