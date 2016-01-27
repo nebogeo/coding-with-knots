@@ -1,11 +1,21 @@
+
 /*
 
+SuperCollider functions for loading Quipu dotfile Datasets
 
+version 0.3 based on the new json file format
+
+NOTE: not all functions from previous versions have moved yet.
+
+
+The json file is structured as follows:
+
+each entry has a number of fields with properties, like ply ("S" or "Z"), colours (array of arrays), position (like 11.5).
+It has also possibly an array of "children", which contains more entries.
+It has possibly an array of "knots", which contains more entries.
 
 */
 
-
-(
 ~readYaml = { |path|
 	path.parseYAMLFile
 };
@@ -45,24 +55,21 @@
 	};
 	res
 };
-~getQuipuData = ~parseDicts <>~readYaml
-);
+
+~getQuipuData = ~parseDicts <>~readYaml;
+
+/*
+
+Information Theory
+
+*/
 
 
+~entropy = { |list|
+	var histogram = list.as(Bag);
+	var contributions = histogram.contents.values / list.size;
+	contributions.sum { |c| neg(c) * log2(c) }
+};
 
-
-~data = ~getQuipuData.("../../json/HP001.json".resolveRelative);
-~data.cs; // post compile string
-
-(
-~traverse = { |dict, func|
-	dict[\children].do { |each| ~traverse.(each, func) };
-	func.value(dict);
-}
-);
-
-
-~traverse.(~data, { |x| x[\colours].postln });
-~traverse.(~data, { |x| x[\knots].postln });
 
 
