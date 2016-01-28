@@ -59,6 +59,10 @@ It has possibly an array of "knots", which contains more entries.
 
 ~getQuipuData = ~parseDicts <>~readYaml;
 
+
+~isLeaf = { |dict| dict[\children].isEmpty };
+
+
 /*
 
 Information Theory
