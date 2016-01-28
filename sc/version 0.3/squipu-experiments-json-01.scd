@@ -47,9 +47,9 @@ SynthDef(\gabor, { |out, freq = 440, sustain = 1, pan, amp = 0.1|
 
 // depth first
 (
-~traverse = { |dict, func, level = 0, index = 0|
-	func.value(dict, level, index);
-	dict[\children].do { |each, i| ~traverse.(each, func, level + 1, i) };
+~traverse = { |dict, func, level = 0, index = 0, returnFromParents|
+	returnFromParents = func.value(dict, level, index, returnFromParents);
+	dict[\children].do { |each, i| ~traverse.(each, func, level + 1, i, returnFromParents) };
 };
 );
 
@@ -174,8 +174,44 @@ Tdef(\x, {
 
 
 
+/*
+
+ENTROPY
+
+*/
+
+~allPaths = "../../json/*.json".resolveRelative.pathMatch;
+~allData = ~allPaths.collect { |x| ~getQuipuData.(x) };
+
+(
+~entropy = { |list|
+	var histogram = list.as(Bag);
+	var contributions = histogram.contents.values / list.size;
+	contributions.sum { |c| neg(c) * log2(c) }
+}
+);
 
 
+(
+~flatten = { |dict, key|
+	var list;
+	~traverse.(dict, { |x| var val = x[key]; if(val.notNil) { list = list.add(val) } });
+	list
+};
+)
+
+~flatten.(~allData[3], \colours);
+~flatten.(~allData[3], \colours).do { |x| x.postln };
+
+~entropy.(~flatten.(~allData[3], \colours));
+
+// colour vs. ply entropies of all quipus
+(
+[
+~allData.collect { |each| ~entropy.(~flatten.(each, \colours)) },
+~allData.collect { |each| ~entropy.(~flatten.(each, \ply)) }
+].plot
+)
 
 
 
