@@ -217,7 +217,7 @@ def prerender(primary,filename,store):
 def render(primary,filename):
     h = int(primary.longest_pendant(0))+10;
     h = min(h,max_height)
-    im = Image.new("RGB", (primary.num_pendants()*3,h), "black")
+    im = Image.new("RGB", (primary.num_pendants()*3,h), "white")
 
     pixels=np.array(im)
     primary.render(pixels,0,0,0)
@@ -282,7 +282,7 @@ def find_row(rows,w,maxw):
     return len(rows)-1
 
 def fit(store):
-    widest=2000 # max width of a row
+    widest=1750 # max width of a row
     rows = [0]
     for r in store.values():
         row = find_row(rows,r[2],widest)
@@ -316,8 +316,8 @@ def run(filename):
         return False
 
     primary = parse_to_pendant_tree(quipu)
-#    reset_entropy()
-#    primary.calc_entropy()
+    reset_entropy()
+    primary.calc_entropy()
 
     return render(primary,filename)
 
@@ -416,7 +416,7 @@ def batch_run(filenames):
         prerun(filename,store)
 
     size = fit(store)
-    im = Image.new("RGB", size, "black")
+    im = Image.new("RGB", size, "white")
 
     for filename in filenames:
         if filename in store:
